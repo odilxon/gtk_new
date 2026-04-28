@@ -3,3 +3,4 @@
 *.pyc
 .env
 *.xlsx
+!data/*.xlsx
