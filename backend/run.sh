@@ -1,3 +1,3 @@
 #!/bin/bash
-source .venv/bin/activate
-uvicorn main:app --reload --port 8005
+source env/Scripts/activate
+uvicorn app.main:app --reload --port "${APP_PORT:-8005}"
