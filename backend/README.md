@@ -19,6 +19,7 @@ backend/
 ├── scripts/
 │   ├── db_load.py           # ETL из Excel в БД (load / clean / drop)
 │   ├── enrich.py            # обогащение: ISO коды стран + области из адресов
+│   ├── fix_prices.py        # одноразовая миграция gtk.price_thousand × 1000
 │   └── set_password.py      # CLI для создания/смены пароля пользователя
 ├── data/                    # справочники: oziqovqat.xlsx, fixes.xlsx, countries_ru_iso.json
 ├── requirements.txt
@@ -67,6 +68,7 @@ Swagger UI: <http://localhost:8005/docs>.
 | `./manage.sh user <name> <pwd>` | создать/обновить пользователя (админ) |
 | `./manage.sh drop` | снести все таблицы (с подтверждением) |
 | `./manage.sh fresh <file.xlsx>` | `drop` → `migrate` → `load` → `enrich` (с нуля) |
+| `./manage.sh fix-prices` | **одноразовая** миграция `price_thousand × 1000` для старых данных |
 
 Типичные сценарии:
 
@@ -127,9 +129,11 @@ python -m scripts.set_password admin Admin123!
 | GET   | `/api/gtk/stats` | агрегаты: импорт/экспорт, топ-5 стран и категорий |
 | GET   | `/api/countries` \| `/api/regions` \| `/api/categories` | справочники |
 | GET   | `/api/products` | товары (фильтр `category_id`, `search`) |
+| GET   | `/api/products/tnved-search?q=<3+>` | async-поиск ТНВЕД по префиксу |
 | GET   | `/api/companies-uzb` \| `/api/companies-foreign` | компании |
 | GET   | `/api/charts/years` | доступные годы |
 | GET   | `/api/charts/monthly` | месячные ряды (импорт/экспорт + рост) |
+| GET   | `/api/charts/totals` | сумма импорт/экспорт/всего без группы |
 | GET   | `/api/charts/group-summary?group=meva\|oziq` | totals по группе |
 | GET   | `/api/charts/group-breakdown` | breakdown по подкатегориям |
 | GET   | `/api/charts/top-organizations` | топ компаний |
@@ -146,3 +150,21 @@ python -m scripts.set_password admin Admin123!
   Параметр `regime` API ожидает именно эти строки.
 - Колонка единицы измерения в Excel — `"Eд.измерения"`, первая буква **латинская**
   `E`. Менять не надо — это так в исходном файле.
+- **`gtk.price_thousand` хранит фактическую сумму в долларах**, не в тысячах,
+  несмотря на «исторический» суффикс `_thousand` в имени. Excel-колонка
+  «Цена(тыс)» исходно в тысячах, поэтому `db_load` множит её на 1000 при ETL,
+  а старые данные были разово приведены `scripts/fix_prices.py`. Не запускай
+  `fix-prices` повторно — операция не идемпотентна, второй прогон умножит ещё
+  раз на 1000.
+- `enrich.regions` использует bulk-UPDATE по подстроке (ILIKE) для каждого
+  алиаса региона; список включает узбекские и русские варианты
+  («Тошкент шаҳри», «г. Ташкент», «Самарқанд», «Самарканд» …). Сортировка
+  по убыванию длины + фильтр `region_id IS NULL` дают то же поведение,
+  что у regex-альтернации с longest-match семантикой.
+- ТНВЕД-фильтр на странице `/dashboard/charts` принимает wildcard вида
+  `707*`: фронт удаляет `*`, шлёт префикс на `/api/products/tnved-search`
+  с `limit=1000`, выпадашка предлагает «Добавить все».
+- `axios` v1 по умолчанию шлёт массивы как `key[0]=…&key[1]=…`, что не
+  байндится в FastAPI `Query(list[str])`. В `frontend/src/lib/api.ts` стоит
+  кастомный `paramsSerializer`, превращающий массивы в повторяющиеся ключи
+  (`?tnved=A&tnved=B`).

@@ -24,9 +24,11 @@ backend/
 │   └── services/      # business logic; charts.py + tnved_groups.py for analytics
 ├── alembic/           # migrations (0001_initial, 0002_country_iso)
 ├── scripts/
-│   ├── db_load.py     # ETL Excel → DB
+│   ├── db_load.py     # ETL Excel → DB (multiplies "Цена(тыс)" by 1000 at insert)
 │   ├── enrich.py      # ISO codes + region extraction from address_uz
+│   ├── fix_prices.py  # one-shot migration: gtk.price_thousand × 1000 (legacy data)
 │   └── set_password.py # CLI to create/update user password
+├── manage.sh          # bash wrapper: migrate / load / clean / reload / fresh / fix-prices / …
 └── data/              # static data: oziqovqat.xlsx, fixes.xlsx, countries_ru_iso.json
 ```
 
@@ -66,18 +68,18 @@ Run from `backend/`:
 
 ```bash
 # Setup
-python -m venv .venv && source .venv/bin/activate
+python -m venv env && source env/Scripts/activate    # Linux/Mac: source env/bin/activate
 pip install -r requirements.txt
 cp .env.example .env                              # then edit DB creds + SECRET_KEY
 
-# Migrations
-alembic upgrade head                              # apply all
-alembic revision --autogenerate -m "msg"          # generate from app.models
-alembic downgrade -1                              # roll back one
-
-# ETL (run after migrations)
-python -m scripts.db_load load gtk_data_2020.xlsx
-python -m scripts.db_load drop                    # destructive
+# Everything else through manage.sh (it activates the venv itself):
+./manage.sh migrate                               # alembic upgrade head
+./manage.sh load data/gtk_data_2020.xlsx
+./manage.sh enrich
+./manage.sh user admin <pwd>
+./manage.sh reload <file.xlsx>                    # clean + load + enrich (idempotent re-import)
+./manage.sh fresh <file.xlsx>                     # drop + migrate + load + enrich
+./manage.sh stats
 
 # Dev server
 ./run.sh                                          # uvicorn app.main:app --reload --port 8005
@@ -106,11 +108,22 @@ Visualizes import/export aggregates with ECharts. Powered by `/api/charts/*`:
 
 - `/years` — distinct years from `gtk.date`
 - `/monthly` — monthly time-series per year (raw + cumulative)
+- `/totals` — single-row totals (import / export / sum) used for the
+  3-card row at the top of the page
 - `/group-summary?group=meva|oziq` — totals (price + mass) for the agricultural groups
 - `/group-breakdown` — table rows per sub-category, sourced from `data/fixes.xlsx`
 - `/top-organizations`, `/top-countries` — bar-chart data
 - `/regions` — Uzbekistan regions for the choropleth (uses `gtk.region_id`)
 - `/world` — countries for the world choropleth (uses `Country.iso_code`)
+
+All chart endpoints (and `/api/gtk`) accept `tnved: list[str]`.
+`/api/products/tnved-search?q=<3+>` is the async lookup powering the
+multi-select. The frontend supports a `707*` wildcard: it strips the `*`,
+asks the backend with a higher `limit`, and offers a "Add all (N)" button.
+
+The Uzbekistan choropleth and the per-group `Озиқ-овқат / Мева-сабзавот`
+cards have been removed from `/dashboard/charts`. `UzbekistanMap.tsx` and
+`GroupCard.tsx` are still in the repo but unused on that page.
 
 **Group definitions** (from `app/services/tnved_groups.py`):
 - `meva` — Product.tnved matches prefix `07*`, `08*`, `0904*`, `1008*`, `1202*`, or equals `1207409000` / `2008191900`
@@ -131,5 +144,11 @@ Visualizes import/export aggregates with ECharts. Powered by `/api/charts/*`:
 - ETL script reads the Excel column `"Eд.измерения"` — note the leading **Latin "E"** (not Cyrillic "Е"). Constant `COL_UNIT` in `scripts/db_load.py` documents this.
 - Auth uses bcrypt directly (no `passlib`) — any pre-existing SHA-256 password hashes from the old code are incompatible. Recreate users via `scripts/set_password.py` after migrating.
 - `CORS_ORIGINS` must include the frontend origin (`http://localhost:3000` for dev). `*` is no longer the default.
-- Region data isn't in raw Excel — it comes from `scripts/enrich.py regions` (regex on `address_uz`). Without this, the Uzbekistan choropleth is empty.
+- Region data isn't in raw Excel — it comes from `scripts/enrich.py regions`. The script does **bulk SQL** (one `UPDATE ... WHERE address_uz ILIKE '%alias%'` per alias), not Python-side regex; loading 2M rows into Python hung the terminal. Aliases include both Uzbek (`Тошкент шаҳри`, `Самарқанд` …) and Russian (`г. Ташкент`, `Самарканд` …) variants. Sorting by alias length DESC + filter `region_id IS NULL` reproduces longest-match semantics so city-of-Tashkent rows don't fall into the region.
 - Country ISO codes are populated by `scripts/enrich.py countries`. Without them the world map is empty.
+- **`gtk.price_thousand` stores actual USD**, not thousands, despite the column name. Excel column "Цена(тыс)" is in thousands; `db_load` multiplies by 1000 at insert. Legacy data was migrated once via `scripts/fix_prices.py` (≈3M rows). **Never run `fix-prices` twice** — not idempotent. The frontend `formatPrice` and the `avg = massa / total` in `group_breakdown` were both updated to match this semantics; if you see prices off by 1000×, this is the first place to look.
+- ETL commits in batches of 20000 rows (was 500). `gtk` itself has no dedup, so re-running `load` on the same file double-inserts; use `manage.sh reload` (or `fresh`) for re-import.
+- ECharts `world.json` has only `{name, childNum}` in feature properties — no ISO codes. `frontend/src/components/charts/worldMapNames.ts` ships a static ISO-2 → ECharts-name dictionary; do **not** try to read `iso_a2` from the geojson.
+- Axios v1's default array serialization is `?key[0]=a&key[1]=b`, which doesn't bind to FastAPI `Query(list[str])`. `frontend/src/lib/api.ts` configures a custom `paramsSerializer` that emits repeated keys (`?key=a&key=b`). Keep it when adding new endpoints with array params.
+- The dashboard layout uses a sticky **top header**, not a sidebar (was a sidebar). `/dashboard/charts` uses `max-w-screen-2xl` to use the freed width; `/dashboard/gtk` stays at `max-w-7xl`.
+- `/dashboard/gtk` filters use a **draft + apply** pattern: editing fields updates a local draft and shows a "не применено" badge. The query only fires when the user clicks **Обновить** (or presses Enter inside the form). Pagination changes apply directly without going through the draft.
