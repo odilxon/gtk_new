@@ -11,37 +11,43 @@
 from __future__ import annotations
 
 import json
-import re
 import sys
 from pathlib import Path
 
+from sqlalchemy import text
 from sqlalchemy.orm import sessionmaker
 
 from app.database import sync_engine
-from app.models import GTK, Country, Region
+from app.models import Country, Region
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
-REGIONS = [
-    "Андижон", "Бухоро", "Жиззах", "Навоий", "Наманган", "Самарқанд",
-    "Сирдарё", "Сурхондарё", "Тошкент шаҳри", "Тошкент",
-    "Фарғона", "Хоразм", "Қашқадарё", "Қорақалпоғистон",
-]
-REGION_LABELS = {
-    "Андижон": "Андижон вилояти",
-    "Бухоро": "Бухоро вилояти",
-    "Жиззах": "Жиззах вилояти",
-    "Навоий": "Навоий вилояти",
-    "Наманган": "Наманган вилояти",
-    "Самарқанд": "Самарқанд вилояти",
-    "Сирдарё": "Сирдарё вилояти",
-    "Сурхондарё": "Сурхондарё вилояти",
-    "Тошкент шаҳри": "Тошкент шаҳри",
-    "Тошкент": "Тошкент вилояти",
-    "Фарғона": "Фарғона вилояти",
-    "Хоразм": "Хоразм вилояти",
-    "Қашқадарё": "Қашқадарё вилояти",
-    "Қорақалпоғистон": "Қорақалпоғистон Республикаси",
+# Канонический label региона → список подстрок для поиска в address_uz.
+# В адресах встречаются и узбекские (кириллица), и русские варианты — нужно
+# учитывать оба. Для Тошкент шаҳри явно перечислены городские формы, чтобы
+# не спутать с Ташкентской областью; за счёт сортировки по длине ниже
+# и фильтра region_id IS NULL они матчатся раньше «Тошкент»/«Ташкент».
+REGION_ALIASES: dict[str, list[str]] = {
+    "Андижон вилояти": ["Андижон", "Андижан"],
+    "Бухоро вилояти": ["Бухоро", "Бухара"],
+    "Жиззах вилояти": ["Жиззах", "Джизак"],
+    "Навоий вилояти": ["Навоий", "Навои"],
+    "Наманган вилояти": ["Наманган"],
+    "Самарқанд вилояти": ["Самарқанд", "Самарканд"],
+    "Сирдарё вилояти": ["Сирдарё", "Сырдарья"],
+    "Сурхондарё вилояти": ["Сурхондарё", "Сурхандарья"],
+    "Тошкент шаҳри": [
+        "Тошкент шаҳри",
+        "Ташкент ш.",
+        "г. Ташкент",
+        "г.Ташкент",
+        "город Ташкент",
+    ],
+    "Тошкент вилояти": ["Тошкент", "Ташкент"],
+    "Фарғона вилояти": ["Фарғона", "Фергана"],
+    "Хоразм вилояти": ["Хоразм", "Хорезм"],
+    "Қашқадарё вилояти": ["Қашқадарё", "Кашкадарья"],
+    "Қорақалпоғистон Республикаси": ["Қорақалпоғистон", "Каракалпакстан"],
 }
 
 
@@ -83,41 +89,46 @@ def enrich_regions() -> None:
     session = Session()
     try:
         existing = {r.name: r.id for r in session.query(Region).all()}
-        for label in REGION_LABELS.values():
+        for label in REGION_ALIASES.keys():
             if label not in existing:
                 session.add(Region(name=label))
         session.commit()
         existing = {r.name: r.id for r in session.query(Region).all()}
 
-        # Для скорости составим один большой regex
-        pattern = re.compile(
-            "|".join(re.escape(k) for k in REGIONS),
-            re.IGNORECASE,
-        )
+        # Bulk UPDATE по каждому алиасу — серверная работа без загрузки
+        # строк gtk в Python. Сортировка по убыванию длины критична:
+        # "Тошкент шаҳри" / "г. Ташкент" должны матчиться раньше
+        # "Тошкент"/"Ташкент", иначе записи города попадут в область
+        # (фильтр region_id IS NULL отсекает уже размеченные строки).
+        pairs: list[tuple[str, str]] = [
+            (alias, label)
+            for label, aliases in REGION_ALIASES.items()
+            for alias in aliases
+        ]
+        pairs.sort(key=lambda p: len(p[0]), reverse=True)
 
-        records = (
-            session.query(GTK)
-            .filter(GTK.region_id.is_(None), GTK.address_uz.isnot(None))
-            .all()
+        stmt = text(
+            "UPDATE gtk SET region_id = :rid "
+            "WHERE region_id IS NULL "
+            "AND address_uz IS NOT NULL "
+            "AND address_uz ILIKE :pat"
         )
-        updated = 0
-        for r in records:
-            m = pattern.search(r.address_uz or "")
-            if not m:
+        per_label: dict[str, int] = {label: 0 for label in REGION_ALIASES}
+        total = 0
+        for alias, label in pairs:
+            region_id = existing.get(label)
+            if not region_id:
                 continue
-            key = m.group(0)
-            for canonical in REGIONS:
-                if canonical.lower() == key.lower():
-                    label = REGION_LABELS[canonical]
-                    region_id = existing.get(label)
-                    if region_id:
-                        r.region_id = region_id
-                        updated += 1
-                    break
-            if updated and updated % 500 == 0:
-                session.commit()
-        session.commit()
-        print(f"regions: обновлено {updated} / просмотрено {len(records)}")
+            res = session.execute(stmt, {"rid": region_id, "pat": f"%{alias}%"})
+            session.commit()
+            n = res.rowcount or 0
+            per_label[label] += n
+            total += n
+            print(f"  [{alias}] -> {label}: {n}")
+        print("---")
+        for label, n in per_label.items():
+            print(f"  {label}: {n}")
+        print(f"regions: обновлено {total}")
     finally:
         session.close()
 

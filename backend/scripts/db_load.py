@@ -134,7 +134,7 @@ def load_data(excel_path: str) -> None:
                 )
             )
             added += 1
-            if added % 500 == 0:
+            if added % 20000 == 0:
                 session.commit()
                 print(f"  обработано {added}")
 
