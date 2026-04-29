@@ -269,7 +269,7 @@ async def group_breakdown(
         total, massa = (await db.execute(stmt)).one()
         total = float(total or 0)
         massa = float(massa or 0)
-        avg = round(massa / (total * 1000), 2) if total > 0 else 0
+        avg = round(massa / total, 2) if total > 0 else 0
         rows.append(
             GroupBreakdownRow(name=category, massa=massa, total=total, avg=avg)
         )

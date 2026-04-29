@@ -98,6 +98,9 @@ class GTK(Base):
     unit = Column(String(50))
     weight = Column(Float)
     quantity = Column(Float)
+    # Имя историческое — Excel-колонка называлась "Цена(тыс)". Сейчас здесь
+    # хранится фактическая сумма в долларах: db_load умножает значение из
+    # Excel на 1000 при загрузке. Старые записи поправил scripts/fix_prices.
     price_thousand = Column(Float)
     date = Column(Date, nullable=False)
 

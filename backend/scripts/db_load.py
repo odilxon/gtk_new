@@ -127,7 +127,9 @@ def load_data(excel_path: str) -> None:
                     quantity=float(row["Количество"])
                     if pd.notna(row.get("Количество"))
                     else None,
-                    price_thousand=float(row["Цена(тыс)"])
+                    # Excel-колонка "Цена(тыс)" — значение в тысячах долларов;
+                    # домножаем здесь, чтобы в БД лежала фактическая сумма в $.
+                    price_thousand=float(row["Цена(тыс)"]) * 1000
                     if pd.notna(row.get("Цена(тыс)"))
                     else None,
                     date=pd.to_datetime(row["Дата"]).date(),

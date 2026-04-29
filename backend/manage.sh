@@ -11,6 +11,7 @@
 #   ./manage.sh user <username> <pwd>    — создать/обновить пользователя
 #   ./manage.sh drop                     — снести все таблицы (опасно)
 #   ./manage.sh fresh <file.xlsx>        — drop + migrate + load + enrich (с нуля)
+#   ./manage.sh fix-prices               — РАЗОВО умножить gtk.price_thousand на 1000
 
 set -e
 
@@ -97,8 +98,16 @@ for m in (GTK, Country, Region, Category, Product, CompanyUzb, CompanyForeign, U
     echo "Готово."
     ;;
 
+  fix-prices)
+    echo "ВНИМАНИЕ: операция ОДНОРАЗОВАЯ. Запуск дважды умножит цены"
+    echo "ещё раз на 1000 и испортит данные."
+    read -p "Умножить все gtk.price_thousand на 1000? [y/N] " ans
+    [ "$ans" = "y" ] || { echo "Отменено."; exit 0; }
+    python -m scripts.fix_prices
+    ;;
+
   *)
-    sed -n '2,15p' "$0"
+    sed -n '2,16p' "$0"
     exit 1
     ;;
 esac

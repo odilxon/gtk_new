@@ -1,7 +1,11 @@
 export function formatPrice(value: number | null | undefined): string {
   if (value === null || value === undefined) return '—';
   let n = Number(value);
-  let suffix = ' тыс';
+  let suffix = '';
+  if (n >= 1000) {
+    n = n / 1000;
+    suffix = ' тыс';
+  }
   if (n >= 1000) {
     n = n / 1000;
     suffix = ' млн';
