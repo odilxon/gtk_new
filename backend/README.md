@@ -17,12 +17,13 @@ backend/
 │   └── services/            # бизнес-логика отдельно от хендлеров
 ├── alembic/                 # миграции
 ├── scripts/
-│   ├── db_load.py           # ETL из Excel в БД
+│   ├── db_load.py           # ETL из Excel в БД (load / clean / drop)
 │   ├── enrich.py            # обогащение: ISO коды стран + области из адресов
 │   └── set_password.py      # CLI для создания/смены пароля пользователя
 ├── data/                    # справочники: oziqovqat.xlsx, fixes.xlsx, countries_ru_iso.json
 ├── requirements.txt
 ├── .env.example
+├── manage.sh                # обёртка над всеми операциями (migrate/load/reload/...)
 └── run.sh
 ```
 
@@ -44,11 +45,47 @@ backend/
 ## Запуск
 
 ```bash
-source .venv/bin/activate
+source env/Scripts/activate             # Linux/Mac: source env/bin/activate
 ./run.sh                                # или: uvicorn app.main:app --reload
 ```
 
 Swagger UI: <http://localhost:8005/docs>.
+
+## manage.sh — обёртка над всеми операциями
+
+Скрипт активирует venv (`env/Scripts/activate`) и пробрасывает аргументы
+дальше. Запускать из `backend/`.
+
+| Команда | Что делает |
+|---------|------------|
+| `./manage.sh migrate` | `alembic upgrade head` |
+| `./manage.sh load <file.xlsx>` | залить данные из Excel |
+| `./manage.sh clean` | удалить все записи из `gtk` (справочники остаются) |
+| `./manage.sh enrich` | `enrich all` — ISO коды + регионы |
+| `./manage.sh reload <file.xlsx>` | `clean` → `load` → `enrich` (ре-импорт без дублей) |
+| `./manage.sh stats` | количество записей по всем таблицам |
+| `./manage.sh user <name> <pwd>` | создать/обновить пользователя (админ) |
+| `./manage.sh drop` | снести все таблицы (с подтверждением) |
+| `./manage.sh fresh <file.xlsx>` | `drop` → `migrate` → `load` → `enrich` (с нуля) |
+
+Типичные сценарии:
+
+```bash
+# Первая установка
+./manage.sh migrate
+./manage.sh load data/gtk_data_2020.xlsx
+./manage.sh enrich
+./manage.sh user admin Admin123!
+
+# Повторная заливка того же файла (или нового среза за тот же период)
+./manage.sh reload data/gtk_data_2020.xlsx
+
+# Перезалить с нуля, включая структуру
+./manage.sh fresh data/gtk_data_2020.xlsx
+```
+
+> `load` сам по себе **не отсекает дубли** на уровне таблицы `gtk` — повторный
+> запуск удвоит записи. Для ре-импорта используй `reload` (или `fresh`).
 
 ## Миграции (Alembic)
 
@@ -62,30 +99,22 @@ alembic history                         # список ревизий
 `alembic/env.py` берёт URL из `app.config.settings.SYNC_DATABASE_URL` — поле
 `sqlalchemy.url` в `alembic.ini` намеренно пустое.
 
-## ETL
+## Низкоуровневые команды
 
-Загрузка `gtk_data_2020.xlsx` в БД (после `alembic upgrade head`):
+`manage.sh` покрывает основные сценарии. При необходимости подкоманды доступны
+напрямую:
 
 ```bash
-python -m scripts.db_load load gtk_data_2020.xlsx
+python -m scripts.db_load load <file.xlsx>
+python -m scripts.db_load clean         # удалить только записи gtk
 python -m scripts.db_load drop          # снести все таблицы (опасно)
-```
 
-### Обогащение для страницы аналитики
-
-```bash
 python -m scripts.enrich all            # ISO коды + области
 python -m scripts.enrich countries      # только ISO
 python -m scripts.enrich regions        # только regex по address_uz
-```
 
-### Управление пользователями
-
-```bash
 python -m scripts.set_password admin Admin123!
 ```
-
-Создаёт пользователя с правами админа, если его нет; иначе — обновляет пароль.
 
 ## API (основные эндпоинты)
 

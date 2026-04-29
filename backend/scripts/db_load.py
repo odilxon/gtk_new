@@ -2,6 +2,7 @@
 
 Использование:
     python -m scripts.db_load load gtk_data_2020.xlsx
+    python -m scripts.db_load clean     # удалить все записи из gtk (справочники остаются)
     python -m scripts.db_load drop      # снести все таблицы (опасно)
 
 Перед первой загрузкой накатить миграции: `alembic upgrade head`.
@@ -24,6 +25,17 @@ from app.models import (
     Region,
     Regime,
 )
+
+
+def clean_gtk() -> None:
+    Session = sessionmaker(bind=sync_engine)
+    session = Session()
+    try:
+        deleted = session.query(GTK).delete()
+        session.commit()
+        print(f"Удалено записей из gtk: {deleted}")
+    finally:
+        session.close()
 
 
 # В Excel колонка единицы измерения называется "Eд.измерения" — первая буква
@@ -202,6 +214,8 @@ def main() -> None:
     if cmd == "load":
         excel_path = sys.argv[2] if len(sys.argv) > 2 else "gtk_data_2020.xlsx"
         load_data(excel_path)
+    elif cmd == "clean":
+        clean_gtk()
     elif cmd == "drop":
         drop_db()
     else:
