@@ -9,12 +9,10 @@ import type { ChartFilters, ChartRegime, WorldPoint } from '@/types/charts';
 
 import { ChartCard } from './ChartCard';
 import { EChart, echarts } from './EChart';
+import { ISO2_TO_WORLD_NAME } from './worldMapNames';
 
 const MAP_NAME = 'world';
 let mapRegistered = false;
-
-// Маппинг ISO-2 в названия из ECharts world.json (используется ISO-3 /英文)
-// world.json от ECharts использует name на английском, поэтому мы делаем двойную мапу.
 
 interface Props {
   title: string;
@@ -27,7 +25,10 @@ export function WorldMap({ title, regime, filters }: Props) {
   const { data, isLoading, error } = useWorld(filters.year, regime, filters);
 
   useEffect(() => {
-    if (mapRegistered) return;
+    if (mapRegistered) {
+      setMapReady(true);
+      return;
+    }
     fetch('/geo/world.json')
       .then((r) => r.json())
       .then((geo) => {
@@ -37,28 +38,11 @@ export function WorldMap({ title, regime, filters }: Props) {
       });
   }, []);
 
-  // ECharts world.json features have "name" в английском; нам нужен маппинг
-  // ISO2 → English name. Чтобы не таскать огромный словарь, фронт строит
-  // маппинг из самой geo-карты при первой регистрации.
-  const [isoToEn, setIsoToEn] = useState<Record<string, string>>({});
-  useEffect(() => {
-    fetch('/geo/world.json')
-      .then((r) => r.json())
-      .then((geo: { features: { properties: { name: string; iso_a2?: string } }[] }) => {
-        const m: Record<string, string> = {};
-        for (const f of geo.features) {
-          const iso = f.properties.iso_a2;
-          if (iso) m[iso] = f.properties.name;
-        }
-        setIsoToEn(m);
-      });
-  }, []);
-
   const option: EChartsOption = useMemo(() => {
-    if (!data || !mapReady || Object.keys(isoToEn).length === 0) return {};
+    if (!data || !mapReady) return {};
     const items = data.items
       .map((p) => {
-        const enName = isoToEn[p.iso];
+        const enName = ISO2_TO_WORLD_NAME[p.iso];
         if (!enName) return null;
         return { name: enName, value: p.value, payload: p };
       })
@@ -98,7 +82,7 @@ export function WorldMap({ title, regime, filters }: Props) {
         },
       ],
     };
-  }, [data, mapReady, isoToEn, regime]);
+  }, [data, mapReady, regime]);
 
   return (
     <ChartCard title={title} loading={isLoading || !mapReady} error={error}>
