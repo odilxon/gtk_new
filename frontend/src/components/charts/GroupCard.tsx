@@ -17,6 +17,7 @@ export function GroupCard({ title, group, filters }: Props) {
   const innerFilters = {
     region_id: filters.region_id,
     country_id: filters.country_id,
+    tnved: filters.tnved,
   };
   const { data: summary, isLoading, error } = useGroupSummary(year, group, innerFilters);
   const { data: breakdown } = useGroupBreakdown(year, group, 'all', innerFilters);

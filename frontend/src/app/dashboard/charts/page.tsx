@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 
 import { ChartFilters } from '@/components/charts/ChartFilters';
-import { GroupCard } from '@/components/charts/GroupCard';
 import { MonthlyChart } from '@/components/charts/MonthlyChart';
 import { TopBarChart } from '@/components/charts/TopBarChart';
-import { UzbekistanMap } from '@/components/charts/UzbekistanMap';
+import { TotalsCards } from '@/components/charts/TotalsCards';
 import { WorldMap } from '@/components/charts/WorldMap';
 import { YearTabs } from '@/components/charts/YearTabs';
 import { Spinner } from '@/components/ui';
@@ -40,7 +39,7 @@ export default function ChartsPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-screen-2xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -59,10 +58,7 @@ export default function ChartsPage() {
 
       <ChartFilters value={filters} onChange={setFilters} />
 
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <GroupCard title="Озиқ-овқат" group="oziq" filters={filters} />
-        <GroupCard title="Мева-сабзавот" group="meva" filters={filters} />
-      </div>
+      <TotalsCards filters={filters} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
         <MonthlyChart
@@ -100,19 +96,6 @@ export default function ChartsPage() {
         <TopBarChart
           title="Экспорт хажми юқори ташкилотлар"
           source="organizations"
-          regime="export"
-          filters={filters}
-        />
-      </div>
-
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
-        <UzbekistanMap
-          title="Импорт по областям"
-          regime="import"
-          filters={filters}
-        />
-        <UzbekistanMap
-          title="Экспорт по областям"
           regime="export"
           filters={filters}
         />

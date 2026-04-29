@@ -38,6 +38,16 @@ export function useProducts(categoryId?: number, search?: string) {
   });
 }
 
+export function useTnvedSearch(query: string, enabled = true, limit = 30) {
+  const trimmed = query.trim();
+  return useQuery({
+    queryKey: ['lookups', 'tnved-search', trimmed, limit],
+    queryFn: () => lookupsApi.tnvedSearch(trimmed, limit),
+    enabled: enabled && trimmed.length >= 3,
+    staleTime: LONG_STALE,
+  });
+}
+
 export function useCompaniesUzb() {
   return useQuery({
     queryKey: ['lookups', 'companies-uzb'],

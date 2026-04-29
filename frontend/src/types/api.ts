@@ -28,6 +28,11 @@ export interface ProductItem extends LookupItem {
   category_id: number;
 }
 
+export interface TnvedSearchItem {
+  tnved: string;
+  name: string;
+}
+
 export interface GTKRecord {
   id: number;
   regime: Regime;
@@ -88,4 +93,5 @@ export interface GTKListParams {
   date_from?: string;
   date_to?: string;
   search?: string;
+  tnved?: string[];
 }

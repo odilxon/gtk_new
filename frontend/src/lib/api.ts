@@ -9,6 +9,7 @@ import type {
   LoginResponse,
   Paginated,
   ProductItem,
+  TnvedSearchItem,
   User,
 } from '@/types/api';
 import type {
@@ -20,6 +21,7 @@ import type {
   MonthlyResponse,
   RegionsResponse,
   TopItems,
+  TotalsResponse,
   WorldResponse,
 } from '@/types/charts';
 
@@ -60,6 +62,23 @@ export const tokenStorage = {
 const api: AxiosInstance = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
+  // FastAPI Query(list[str]) требует повторяющийся ключ (?tnved=A&tnved=B);
+  // дефолт axios v1 — `tnved[0]=A&tnved[1]=B`, что не байндится в list[str].
+  paramsSerializer: (params: Record<string, unknown>) => {
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) {
+      if (v === undefined || v === null) continue;
+      if (Array.isArray(v)) {
+        for (const item of v) {
+          if (item !== undefined && item !== null)
+            sp.append(k, String(item));
+        }
+      } else {
+        sp.append(k, String(v));
+      }
+    }
+    return sp.toString();
+  },
 });
 
 api.interceptors.request.use((config) => {
@@ -142,6 +161,12 @@ export const lookupsApi = {
     });
     return data;
   },
+  tnvedSearch: async (q: string, limit = 30): Promise<TnvedSearchItem[]> => {
+    const { data } = await api.get<TnvedSearchItem[]>('/api/products/tnved-search', {
+      params: { q, limit: Math.min(Math.max(limit, 1), 1000) },
+    });
+    return data;
+  },
   companiesUzb: async (): Promise<CompanyUzbItem[]> => {
     const { data } = await api.get<CompanyUzbItem[]>('/api/companies-uzb');
     return data;
@@ -163,10 +188,19 @@ export const chartsApi = {
     });
     return data;
   },
+  totals: async (
+    year: number,
+    filters: Pick<ChartFilters, 'tnved' | 'region_id' | 'country_id'> = {},
+  ): Promise<TotalsResponse> => {
+    const { data } = await api.get<TotalsResponse>('/api/charts/totals', {
+      params: { year, ...filters },
+    });
+    return data;
+  },
   groupSummary: async (
     year: number,
     group: ChartGroup,
-    filters: Pick<ChartFilters, 'region_id' | 'country_id'> = {},
+    filters: Pick<ChartFilters, 'region_id' | 'country_id' | 'tnved'> = {},
   ): Promise<GroupSummary> => {
     const { data } = await api.get<GroupSummary>('/api/charts/group-summary', {
       params: { year, group, ...filters },
@@ -177,7 +211,7 @@ export const chartsApi = {
     year: number,
     group: ChartGroup,
     type: 'import' | 'export' | 'all' = 'all',
-    filters: Pick<ChartFilters, 'region_id' | 'country_id'> = {},
+    filters: Pick<ChartFilters, 'region_id' | 'country_id' | 'tnved'> = {},
   ): Promise<GroupBreakdown> => {
     const { data } = await api.get<GroupBreakdown>('/api/charts/group-breakdown', {
       params: { year, group, type, ...filters },

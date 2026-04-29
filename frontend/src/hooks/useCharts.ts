@@ -20,10 +20,21 @@ export function useMonthly(filters: ChartFilters) {
   });
 }
 
+export function useTotals(
+  year: number | undefined,
+  filters: Pick<ChartFilters, 'tnved' | 'region_id' | 'country_id'> = {},
+) {
+  return useQuery({
+    queryKey: ['charts', 'totals', year, filters],
+    queryFn: () => chartsApi.totals(year as number, filters),
+    enabled: year !== undefined,
+  });
+}
+
 export function useGroupSummary(
   year: number | undefined,
   group: ChartGroup,
-  filters: Pick<ChartFilters, 'region_id' | 'country_id'> = {},
+  filters: Pick<ChartFilters, 'region_id' | 'country_id' | 'tnved'> = {},
 ) {
   return useQuery({
     queryKey: ['charts', 'group-summary', year, group, filters],
@@ -36,7 +47,7 @@ export function useGroupBreakdown(
   year: number | undefined,
   group: ChartGroup,
   type: 'import' | 'export' | 'all' = 'all',
-  filters: Pick<ChartFilters, 'region_id' | 'country_id'> = {},
+  filters: Pick<ChartFilters, 'region_id' | 'country_id' | 'tnved'> = {},
 ) {
   return useQuery({
     queryKey: ['charts', 'group-breakdown', year, group, type, filters],

@@ -4,6 +4,8 @@ import { Button, Select } from '@/components/ui';
 import { useCountries, useRegions } from '@/hooks/useLookups';
 import type { ChartFilters as Filters } from '@/types/charts';
 
+import { TnvedMultiSelect } from './TnvedMultiSelect';
+
 interface Props {
   value: Filters;
   onChange: (next: Filters) => void;
@@ -56,6 +58,13 @@ export function ChartFilters({ value, onChange }: Props) {
           value={value.region_id ?? ''}
           onChange={(e) =>
             set('region_id', e.target.value ? Number(e.target.value) : undefined)
+          }
+        />
+        <TnvedMultiSelect
+          label="ТНВЕД"
+          value={value.tnved ?? []}
+          onChange={(codes) =>
+            set('tnved', codes.length > 0 ? codes : undefined)
           }
         />
       </div>

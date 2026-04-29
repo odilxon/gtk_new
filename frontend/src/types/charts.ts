@@ -29,6 +29,13 @@ export interface GroupSummary {
   total: GroupTotals;
 }
 
+export interface TotalsResponse {
+  year: number;
+  import_: GroupTotals;
+  export: GroupTotals;
+  total: GroupTotals;
+}
+
 export interface GroupBreakdownRow {
   name: string;
   massa: number;
