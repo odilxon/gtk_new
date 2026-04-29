@@ -30,7 +30,7 @@ export default function GTKPage() {
         </p>
       </div>
 
-      <GTKFilters value={filters} onChange={setFilters} />
+      <GTKFilters value={filters} onApply={setFilters} />
 
       {error && (
         <div className="mb-4">

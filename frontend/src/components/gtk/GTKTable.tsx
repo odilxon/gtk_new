@@ -21,12 +21,11 @@ export function GTKTable({ items }: { items: GTKRecord[] }) {
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            <Th>ID</Th>
             <Th>Режим</Th>
             <Th>Страна</Th>
-            <Th>Категория</Th>
-            <Th>Товар</Th>
-            <Th>ТН ВЭД</Th>
+            <Th>Компания Узб</Th>
+            <Th>Иностр. компания</Th>
+            <Th>Товар / ТН ВЭД</Th>
             <Th align="right">Вес (кг)</Th>
             <Th align="right">Цена ($)</Th>
             <Th>Дата</Th>
@@ -35,16 +34,24 @@ export function GTKTable({ items }: { items: GTKRecord[] }) {
         <tbody className="divide-y divide-gray-50">
           {items.map((item) => (
             <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 text-sm text-gray-500">#{item.id}</td>
               <td className="px-4 py-3">
                 <RegimeBadge regime={item.regime} />
               </td>
               <td className="px-4 py-3 text-sm text-gray-900">{item.country_name ?? '—'}</td>
-              <td className="px-4 py-3 text-sm text-gray-600">{item.category_name ?? '—'}</td>
-              <td className="px-4 py-3 text-sm text-gray-900 max-w-xs truncate">
-                {item.product_name ?? '—'}
+              <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                {item.company_uzb_name ?? '—'}
               </td>
-              <td className="px-4 py-3 text-sm font-mono text-gray-500">{item.tnved ?? '—'}</td>
+              <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                {item.company_foreign_name ?? '—'}
+              </td>
+              <td className="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                <div className="truncate">{item.product_name ?? '—'}</div>
+                {item.tnved && (
+                  <div className="text-xs font-mono text-gray-500 mt-0.5">
+                    {item.tnved}
+                  </div>
+                )}
+              </td>
               <td className="px-4 py-3 text-sm text-gray-600 text-right">
                 {formatNumber(item.weight)}
               </td>
