@@ -27,6 +27,13 @@ class GroupSummary(BaseModel):
     total: GroupTotals
 
 
+class TotalsResponse(BaseModel):
+    year: int
+    import_: GroupTotals
+    export: GroupTotals
+    total: GroupTotals
+
+
 class GroupBreakdownRow(BaseModel):
     name: str
     massa: float

@@ -26,6 +26,7 @@ async def list_gtk(
     date_from: date | None = Query(None),
     date_to: date | None = Query(None),
     search: str | None = Query(None),
+    tnved: list[str] | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ) -> Paginated[GTKItem]:
     return await gtk_service.list_gtk(
@@ -42,6 +43,7 @@ async def list_gtk(
         date_from=date_from,
         date_to=date_to,
         search=search,
+        tnved=tnved,
     )
 
 

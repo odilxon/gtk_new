@@ -25,6 +25,7 @@ from app.schemas.charts import (
     RegionsResponse,
     TopItemRow,
     TopItems,
+    TotalsResponse,
     WorldPoint,
     WorldResponse,
 )
@@ -153,11 +154,45 @@ async def monthly(
     )
 
 
+async def totals(
+    db: AsyncSession,
+    *,
+    year: int,
+    tnved: list[str] | None,
+    region_id: int | None,
+    country_id: int | None,
+) -> TotalsResponse:
+    async def _sum(regime: Regime) -> GroupTotals:
+        stmt = select(
+            func.coalesce(func.sum(GTK.price_thousand), 0.0),
+            func.coalesce(func.sum(GTK.weight), 0.0),
+        ).where(GTK.regime == regime)
+        stmt = _apply_common(
+            stmt,
+            year=year,
+            tnved=tnved,
+            region_id=region_id,
+            country_id=country_id,
+        )
+        total, massa = (await db.execute(stmt)).one()
+        return GroupTotals(total=float(total or 0), massa=float(massa or 0))
+
+    im = await _sum(Regime.ИМ)
+    ex = await _sum(Regime.ЭК)
+    return TotalsResponse(
+        year=year,
+        import_=im,
+        export=ex,
+        total=GroupTotals(total=im.total + ex.total, massa=im.massa + ex.massa),
+    )
+
+
 async def group_summary(
     db: AsyncSession,
     *,
     year: int,
     group: str,
+    tnved: list[str] | None,
     region_id: int | None,
     country_id: int | None,
 ) -> GroupSummary:
@@ -181,6 +216,8 @@ async def group_summary(
             stmt = stmt.where(GTK.region_id == region_id)
         if country_id:
             stmt = stmt.where(GTK.country_id == country_id)
+        if tnved:
+            stmt = stmt.where(Product.tnved.in_(tnved))
         total, massa = (await db.execute(stmt)).one()
         return GroupTotals(total=float(total or 0), massa=float(massa or 0))
 
@@ -201,6 +238,7 @@ async def group_breakdown(
     year: int,
     group: str,
     type_: str,
+    tnved: list[str] | None,
     region_id: int | None,
     country_id: int | None,
 ) -> GroupBreakdown:
@@ -226,6 +264,8 @@ async def group_breakdown(
             stmt = stmt.where(GTK.region_id == region_id)
         if country_id:
             stmt = stmt.where(GTK.country_id == country_id)
+        if tnved:
+            stmt = stmt.where(Product.tnved.in_(tnved))
         total, massa = (await db.execute(stmt)).one()
         total = float(total or 0)
         massa = float(massa or 0)

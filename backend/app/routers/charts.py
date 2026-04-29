@@ -10,6 +10,7 @@ from app.schemas.charts import (
     MonthlyResponse,
     RegionsResponse,
     TopItems,
+    TotalsResponse,
     WorldResponse,
 )
 from app.security import get_current_user
@@ -43,16 +44,31 @@ async def monthly(
     return await svc.monthly(db, **filters)
 
 
+@router.get("/totals", response_model=TotalsResponse)
+async def totals(
+    year: int = Query(...),
+    filters: dict = Depends(common_filters),
+    db: AsyncSession = Depends(get_db),
+) -> TotalsResponse:
+    return await svc.totals(db, year=year, **filters)
+
+
 @router.get("/group-summary", response_model=GroupSummary)
 async def group_summary(
     year: int = Query(...),
     group: Literal["meva", "oziq"] = Query(...),
+    tnved: list[str] | None = Query(None),
     region_id: int | None = Query(None),
     country_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
 ) -> GroupSummary:
     return await svc.group_summary(
-        db, year=year, group=group, region_id=region_id, country_id=country_id
+        db,
+        year=year,
+        group=group,
+        tnved=tnved,
+        region_id=region_id,
+        country_id=country_id,
     )
 
 
@@ -61,6 +77,7 @@ async def group_breakdown(
     year: int = Query(...),
     group: Literal["meva", "oziq"] = Query(...),
     type: Literal["import", "export", "all"] = Query("all"),
+    tnved: list[str] | None = Query(None),
     region_id: int | None = Query(None),
     country_id: int | None = Query(None),
     db: AsyncSession = Depends(get_db),
@@ -70,6 +87,7 @@ async def group_breakdown(
         year=year,
         group=group,
         type_=type,
+        tnved=tnved,
         region_id=region_id,
         country_id=country_id,
     )

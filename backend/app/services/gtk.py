@@ -23,6 +23,7 @@ def _apply_filters(
     date_from: date | None,
     date_to: date | None,
     search: str | None,
+    tnved: list[str] | None = None,
 ) -> Select:
     if regime:
         stmt = stmt.where(GTK.regime == Regime[regime])
@@ -40,7 +41,7 @@ def _apply_filters(
         stmt = stmt.where(GTK.date >= date_from)
     if date_to:
         stmt = stmt.where(GTK.date <= date_to)
-    if category_id or search:
+    if category_id or search or tnved:
         stmt = stmt.join(Product, GTK.product_id == Product.id)
         if category_id:
             stmt = stmt.where(Product.category_id == category_id)
@@ -49,6 +50,8 @@ def _apply_filters(
             stmt = stmt.where(
                 Product.name.ilike(like) | Product.tnved.ilike(like)
             )
+        if tnved:
+            stmt = stmt.where(Product.tnved.in_(tnved))
     return stmt
 
 
@@ -96,6 +99,7 @@ async def list_gtk(
     date_from: date | None = None,
     date_to: date | None = None,
     search: str | None = None,
+    tnved: list[str] | None = None,
 ) -> Paginated[GTKItem]:
     filters = dict(
         regime=regime,
@@ -108,6 +112,7 @@ async def list_gtk(
         date_from=date_from,
         date_to=date_to,
         search=search,
+        tnved=tnved,
     )
 
     base = select(GTK).options(

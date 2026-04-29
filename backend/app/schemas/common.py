@@ -23,6 +23,11 @@ class ProductItem(BaseModel):
     category_id: int
 
 
+class TnvedSearchItem(BaseModel):
+    tnved: str
+    name: str
+
+
 class TopItem(BaseModel):
     id: int
     name: str
