@@ -4,7 +4,7 @@ import type { EChartsOption } from 'echarts';
 import { useMemo } from 'react';
 
 import { useTopCountries, useTopOrganizations } from '@/hooks/useCharts';
-import { formatPrice } from '@/lib/format';
+import { useFormatters } from '@/i18n/useFormatters';
 import type { ChartFilters, ChartRegime } from '@/types/charts';
 
 import { ChartCard } from './ChartCard';
@@ -29,6 +29,7 @@ export function TopBarChart({ title, source, regime, filters }: Props) {
   });
   const q = isOrg ? orgQ : cntQ;
   const { data, isLoading, error } = q;
+  const { formatPrice } = useFormatters();
 
   const option: EChartsOption = useMemo(() => {
     if (!data) return {};
@@ -67,7 +68,7 @@ export function TopBarChart({ title, source, regime, filters }: Props) {
         },
       ],
     };
-  }, [data, regime]);
+  }, [data, regime, formatPrice]);
 
   return (
     <ChartCard title={title} loading={isLoading} error={error}>

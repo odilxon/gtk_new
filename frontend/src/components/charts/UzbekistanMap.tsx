@@ -71,7 +71,7 @@ export function UzbekistanMap({ title, regime, filters }: Props) {
       },
       series: [
         {
-          name: 'Регион',
+          name: 'Вилоят',
           type: 'map',
           map: MAP_NAME,
           roam: false,

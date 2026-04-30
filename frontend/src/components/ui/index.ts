@@ -1,6 +1,7 @@
 export { Alert } from './Alert';
 export { Button } from './Button';
 export { Input } from './Input';
+export { LanguageSwitcher } from './LanguageSwitcher';
 export { Pagination } from './Pagination';
 export { RegimeBadge } from './RegimeBadge';
 export { Select } from './Select';

@@ -9,6 +9,7 @@ import {
   useCountries,
   useProducts,
 } from '@/hooks/useLookups';
+import { useT } from '@/i18n/I18nProvider';
 import type { GTKListParams, Regime } from '@/types/api';
 
 interface Props {
@@ -16,19 +17,20 @@ interface Props {
   onApply: (next: GTKListParams) => void;
 }
 
-const REGIME_OPTIONS = [
-  { value: 'ИМ', label: 'ИМ (Импорт)' },
-  { value: 'ЭК', label: 'ЭК (Экспорт)' },
-];
-
 export function GTKFilters({ value, onApply }: Props) {
+  const t = useT();
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState<GTKListParams>(value);
   const { data: countries = [] } = useCountries();
   const { data: categories = [] } = useCategories();
   const { data: products = [] } = useProducts(draft.category_id);
 
-  // Если внешний `value` сменился (например, страница пагинации) — синхронизируем
+  const REGIME_OPTIONS = [
+    { value: 'ИМ', label: `ИМ (${t('totals.import')})` },
+    { value: 'ЭК', label: `ЭК (${t('totals.export')})` },
+  ];
+
+  // Если внешний `value` сменился (например, при пагинации) — подтягиваем
   // только page/page_size, чтобы не терять незакоммиченные правки фильтров.
   useEffect(() => {
     setDraft((d) => ({
@@ -60,7 +62,7 @@ export function GTKFilters({ value, onApply }: Props) {
     draft.tnved?.length,
   ].filter((v) => v !== undefined && v !== '' && v !== 0).length;
 
-  // Есть ли несохранённые правки, которые ждут «Обновить».
+  // Есть ли несохранённые правки, которые ждут «Янгилаш».
   const dirty =
     draft.regime !== value.regime ||
     draft.country_id !== value.country_id ||
@@ -81,7 +83,7 @@ export function GTKFilters({ value, onApply }: Props) {
           <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
-          <span className="font-medium text-gray-900">Фильтры</span>
+          <span className="font-medium text-gray-900">{t('filters.title')}</span>
           {activeCount > 0 && (
             <span className="text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full">
               {activeCount}
@@ -89,7 +91,7 @@ export function GTKFilters({ value, onApply }: Props) {
           )}
           {dirty && (
             <span className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full">
-              не применено
+              {t('filters.notApplied')}
             </span>
           )}
         </div>
@@ -113,8 +115,8 @@ export function GTKFilters({ value, onApply }: Props) {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
               <Select
-                label="Режим"
-                placeholder="Все режимы"
+                label={t('filters.regime')}
+                placeholder={t('filters.allRegimes')}
                 options={REGIME_OPTIONS}
                 value={draft.regime ?? ''}
                 onChange={(e) =>
@@ -122,8 +124,8 @@ export function GTKFilters({ value, onApply }: Props) {
                 }
               />
               <Select
-                label="Страна"
-                placeholder="Все страны"
+                label={t('filters.country')}
+                placeholder={t('filters.allCountries')}
                 options={countries.map((c) => ({ value: c.id, label: c.name }))}
                 value={draft.country_id ?? ''}
                 onChange={(e) =>
@@ -131,8 +133,8 @@ export function GTKFilters({ value, onApply }: Props) {
                 }
               />
               <Select
-                label="Категория"
-                placeholder="Все категории"
+                label={t('filters.category')}
+                placeholder={t('filters.allCategories')}
                 options={categories.map((c) => ({ value: c.id, label: c.name }))}
                 value={draft.category_id ?? ''}
                 onChange={(e) =>
@@ -140,8 +142,8 @@ export function GTKFilters({ value, onApply }: Props) {
                 }
               />
               <Select
-                label="Товар"
-                placeholder="Все товары"
+                label={t('filters.product')}
+                placeholder={t('filters.allProducts')}
                 options={products.map((p) => ({ value: p.id, label: p.name }))}
                 value={draft.product_id ?? ''}
                 onChange={(e) =>
@@ -150,7 +152,7 @@ export function GTKFilters({ value, onApply }: Props) {
               />
               <div className="sm:col-span-2">
                 <TnvedMultiSelect
-                  label="ТН ВЭД"
+                  label={t('filters.tnved')}
                   value={draft.tnved ?? []}
                   onChange={(codes) =>
                     set('tnved', codes.length > 0 ? codes : undefined)
@@ -158,22 +160,22 @@ export function GTKFilters({ value, onApply }: Props) {
                 />
               </div>
               <Input
-                label="Дата от"
+                label={t('filters.dateFrom')}
                 type="date"
                 value={draft.date_from ?? ''}
                 onChange={(e) => set('date_from', e.target.value || undefined)}
               />
               <Input
-                label="Дата до"
+                label={t('filters.dateTo')}
                 type="date"
                 value={draft.date_to ?? ''}
                 onChange={(e) => set('date_to', e.target.value || undefined)}
               />
               <div className="sm:col-span-2 lg:col-span-4">
                 <Input
-                  label="Поиск"
+                  label={t('common.search')}
                   type="text"
-                  placeholder="Название товара или ТН ВЭД..."
+                  placeholder={t('filters.searchPlaceholder')}
                   value={draft.search ?? ''}
                   onChange={(e) => set('search', e.target.value || undefined)}
                 />
@@ -182,10 +184,10 @@ export function GTKFilters({ value, onApply }: Props) {
 
             <div className="flex gap-3 mt-4">
               <Button type="submit" variant="primary">
-                Обновить
+                {t('common.apply')}
               </Button>
               <Button type="button" variant="secondary" onClick={reset}>
-                Сбросить
+                {t('common.reset')}
               </Button>
             </div>
           </form>

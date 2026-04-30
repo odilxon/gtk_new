@@ -1,6 +1,9 @@
+'use client';
+
 import { ReactNode } from 'react';
 
 import { Spinner } from '@/components/ui';
+import { useT } from '@/i18n/I18nProvider';
 
 interface Props {
   title: string;
@@ -11,6 +14,7 @@ interface Props {
 }
 
 export function ChartCard({ title, children, toolbar, loading, error }: Props) {
+  const t = useT();
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-3">
@@ -25,7 +29,7 @@ export function ChartCard({ title, children, toolbar, loading, error }: Props) {
         )}
         {error ? (
           <div className="text-sm text-red-600 py-8 text-center">
-            {error instanceof Error ? error.message : 'Ошибка загрузки'}
+            {error instanceof Error ? error.message : t('common.loadingError')}
           </div>
         ) : (
           children

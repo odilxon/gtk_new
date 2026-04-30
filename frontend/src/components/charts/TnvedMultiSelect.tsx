@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { useTnvedSearch } from '@/hooks/useLookups';
+import { useT } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/cn';
 
 interface Props {
@@ -18,10 +19,12 @@ export function TnvedMultiSelect({
   label,
   value,
   onChange,
-  placeholder = 'Минимум 3 цифры…',
+  placeholder,
   minChars = 3,
   debounceMs = 250,
 }: Props) {
+  const t = useT();
+  const ph = placeholder ?? t('tnved.placeholder');
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
   const [open, setOpen] = useState(false);
@@ -113,7 +116,7 @@ export function TnvedMultiSelect({
                 remove(code);
               }}
               className="hover:text-indigo-900"
-              aria-label={`Удалить ${code}`}
+              aria-label={t('tnved.removeAria', { code })}
             >
               ×
             </button>
@@ -126,7 +129,7 @@ export function TnvedMultiSelect({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setOpen(true)}
           onKeyDown={onKeyDown}
-          placeholder={value.length === 0 ? placeholder : ''}
+          placeholder={value.length === 0 ? ph : ''}
           className="flex-1 min-w-[120px] outline-none text-sm py-1 px-1 bg-transparent"
         />
 
@@ -138,9 +141,9 @@ export function TnvedMultiSelect({
               clearAll();
             }}
             className="text-xs text-gray-400 hover:text-gray-600 px-1"
-            title="Очистить"
+            title={t('common.clearTitle')}
           >
-            очистить
+            {t('common.clear')}
           </button>
         )}
       </div>
@@ -148,7 +151,9 @@ export function TnvedMultiSelect({
       {open && searchTerm.length >= minChars && (
         <div className="absolute z-20 mt-1 w-full max-h-72 overflow-auto rounded-lg border border-gray-200 bg-white shadow-lg">
           {isFetching && (
-            <div className="px-3 py-2 text-xs text-gray-400">Поиск…</div>
+            <div className="px-3 py-2 text-xs text-gray-400">
+              {t('tnved.searching')}
+            </div>
           )}
           {!isFetching && isWildcard && filteredResults.length > 0 && (
             <button
@@ -156,11 +161,16 @@ export function TnvedMultiSelect({
               onClick={addAll}
               className="w-full text-left px-3 py-2 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium border-b border-indigo-100"
             >
-              + Добавить все по {searchTerm}* ({filteredResults.length})
+              {t('tnved.addAll', {
+                prefix: searchTerm,
+                count: filteredResults.length,
+              })}
             </button>
           )}
           {!isFetching && filteredResults.length === 0 && (
-            <div className="px-3 py-2 text-xs text-gray-400">Ничего не найдено</div>
+            <div className="px-3 py-2 text-xs text-gray-400">
+              {t('tnved.notFound')}
+            </div>
           )}
           {!isFetching &&
             filteredResults.map((it) => (
@@ -179,9 +189,8 @@ export function TnvedMultiSelect({
 
       {open && trimmedDebounced.length > 0 && searchTerm.length < minChars && (
         <div className="absolute z-20 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg px-3 py-2 text-xs text-gray-400">
-          Введите ещё {minChars - searchTerm.length}{' '}
-          {minChars - searchTerm.length === 1 ? 'символ' : 'символа'}
-          {isWildcard ? ' перед *' : ''}
+          {t('tnved.moreChars', { n: minChars - searchTerm.length })}
+          {isWildcard ? t('tnved.beforeAsterisk') : ''}
         </div>
       )}
     </div>

@@ -5,12 +5,9 @@ import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
 
 import { AuthGuard } from '@/components/AuthGuard';
+import { LanguageSwitcher } from '@/components/ui';
 import { useLogout } from '@/hooks/useAuth';
-
-const navItems = [
-  { href: '/dashboard/gtk', label: 'GTK Данные' },
-  { href: '/dashboard/charts', label: 'Аналитика' },
-];
+import { useT } from '@/i18n/I18nProvider';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
@@ -23,6 +20,12 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const logout = useLogout();
+  const t = useT();
+
+  const navItems = [
+    { href: '/dashboard/gtk', label: t('nav.gtk') },
+    { href: '/dashboard/charts', label: t('nav.charts') },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -34,7 +37,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
                 <span className="text-white font-bold text-sm">GTK</span>
               </div>
               <span className="font-semibold text-gray-900 hidden sm:inline">
-                Dashboard
+                {t('app.dashboard')}
               </span>
             </Link>
 
@@ -58,25 +61,28 @@ function DashboardShell({ children }: { children: ReactNode }) {
             </nav>
           </div>
 
-          <button
-            onClick={logout}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
-          >
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <button
+              onClick={logout}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            <span className="hidden sm:inline">Выйти</span>
-          </button>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              <span className="hidden sm:inline">{t('nav.logout')}</span>
+            </button>
+          </div>
         </div>
       </header>
 

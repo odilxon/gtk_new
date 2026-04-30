@@ -4,7 +4,7 @@ import type { EChartsOption } from 'echarts';
 import { useMemo } from 'react';
 
 import { useMonthly } from '@/hooks/useCharts';
-import { formatPrice } from '@/lib/format';
+import { useFormatters } from '@/i18n/useFormatters';
 import type { ChartFilters } from '@/types/charts';
 
 import { ChartCard } from './ChartCard';
@@ -20,6 +20,7 @@ interface Props {
 
 export function MonthlyChart({ title, field, filters }: Props) {
   const { data, isLoading, error } = useMonthly(filters);
+  const { formatPrice } = useFormatters();
 
   const option: EChartsOption = useMemo(() => {
     if (!data) return {};
@@ -52,7 +53,7 @@ export function MonthlyChart({ title, field, filters }: Props) {
       },
       series,
     };
-  }, [data, field]);
+  }, [data, field, formatPrice]);
 
   return (
     <ChartCard title={title} loading={isLoading} error={error}>

@@ -50,9 +50,9 @@ export function GroupCard({ title, group, filters }: Props) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left text-xs text-gray-500 border-b border-gray-100">
-                <th className="py-2 pr-2 font-medium">Категория</th>
-                <th className="py-2 pr-2 font-medium text-right">Хажми</th>
-                <th className="py-2 pr-2 font-medium text-right">Сумма</th>
+                <th className="py-2 pr-2 font-medium">Тоифа</th>
+                <th className="py-2 pr-2 font-medium text-right">Ҳажми</th>
+                <th className="py-2 pr-2 font-medium text-right">Жами</th>
                 <th className="py-2 font-medium text-right">Ўртача</th>
               </tr>
             </thead>

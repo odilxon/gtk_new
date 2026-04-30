@@ -1,4 +1,7 @@
+'use client';
+
 import { RegimeBadge } from '@/components/ui';
+import { useT } from '@/i18n/I18nProvider';
 import type { GTKRecord } from '@/types/api';
 
 const formatNumber = (v: number | null) =>
@@ -8,10 +11,11 @@ const formatPrice = (v: number | null) =>
   v === null ? '—' : `$${v.toLocaleString('ru-RU')}`;
 
 export function GTKTable({ items }: { items: GTKRecord[] }) {
+  const t = useT();
   if (items.length === 0) {
     return (
       <div className="p-12 text-center">
-        <p className="text-gray-500 text-sm">Записей не найдено</p>
+        <p className="text-gray-500 text-sm">{t('gtk.notFound')}</p>
       </div>
     );
   }
@@ -21,14 +25,14 @@ export function GTKTable({ items }: { items: GTKRecord[] }) {
       <table className="w-full">
         <thead>
           <tr className="bg-gray-50 border-b border-gray-100">
-            <Th>Режим</Th>
-            <Th>Страна</Th>
-            <Th>Компания Узб</Th>
-            <Th>Иностр. компания</Th>
-            <Th>Товар / ТН ВЭД</Th>
-            <Th align="right">Вес (кг)</Th>
-            <Th align="right">Цена ($)</Th>
-            <Th>Дата</Th>
+            <Th>{t('gtk.cols.regime')}</Th>
+            <Th>{t('gtk.cols.country')}</Th>
+            <Th>{t('gtk.cols.companyUz')}</Th>
+            <Th>{t('gtk.cols.companyForeign')}</Th>
+            <Th>{t('gtk.cols.product')}</Th>
+            <Th align="right">{t('gtk.cols.weight')}</Th>
+            <Th align="right">{t('gtk.cols.price')}</Th>
+            <Th>{t('gtk.cols.date')}</Th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">

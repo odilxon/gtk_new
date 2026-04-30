@@ -3,8 +3,9 @@
 import { FormEvent, useState } from 'react';
 
 import { RedirectIfAuth } from '@/components/AuthGuard';
-import { Alert, Button, Input } from '@/components/ui';
+import { Alert, Button, Input, LanguageSwitcher } from '@/components/ui';
 import { useLogin } from '@/hooks/useAuth';
+import { useT } from '@/i18n/I18nProvider';
 
 export default function LoginPage() {
   return (
@@ -18,6 +19,7 @@ function LoginForm() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const login = useLogin();
+  const t = useT();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -26,7 +28,7 @@ function LoginForm() {
 
   const errorMessage =
     login.error instanceof Error
-      ? login.error.message || 'Неверный логин или пароль'
+      ? login.error.message || t('auth.invalid')
       : null;
 
   return (
@@ -39,44 +41,47 @@ function LoginForm() {
         <div className="relative z-10 flex flex-col justify-center items-center w-full text-white px-12">
           <h2 className="text-5xl font-bold mb-4 text-center">GTK</h2>
           <p className="text-xl text-purple-200 text-center max-w-md">
-            Внешнеторговая статистика Узбекистана
+            {t('app.title')}
           </p>
           <p className="text-purple-300/60 text-sm mt-4 text-center">
-            Анализ импорта и экспорта
+            {t('app.tagline')}
           </p>
         </div>
       </div>
 
-      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white px-8 py-12">
+      <div className="w-full lg:w-1/2 flex items-center justify-center bg-white px-8 py-12 relative">
+        <div className="absolute top-6 right-6">
+          <LanguageSwitcher />
+        </div>
         <div className="w-full max-w-md">
           <div className="text-center lg:text-left mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Вход</h1>
-            <p className="text-gray-500">
-              Войдите в систему для доступа к данным
-            </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              {t('auth.title')}
+            </h1>
+            <p className="text-gray-500">{t('auth.subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {errorMessage && <Alert>{errorMessage}</Alert>}
 
             <Input
-              label="Логин"
+              label={t('auth.login')}
               name="username"
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Введите логин"
+              placeholder={t('auth.loginPlaceholder')}
               autoComplete="username"
               required
             />
 
             <Input
-              label="Пароль"
+              label={t('auth.password')}
               name="password"
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Введите пароль"
+              placeholder={t('auth.passwordPlaceholder')}
               autoComplete="current-password"
               required
             />
@@ -86,7 +91,7 @@ function LoginForm() {
               loading={login.isPending}
               className="w-full py-3.5"
             >
-              {login.isPending ? 'Вход...' : 'Войти'}
+              {login.isPending ? t('auth.submitting') : t('auth.submit')}
             </Button>
           </form>
         </div>

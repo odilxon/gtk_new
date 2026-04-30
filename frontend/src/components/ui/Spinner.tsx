@@ -1,12 +1,16 @@
+'use client';
+
+import { useT } from '@/i18n/I18nProvider';
 import { cn } from '@/lib/cn';
 
 export function Spinner({ className }: { className?: string }) {
+  const t = useT();
   return (
     <svg
       className={cn('animate-spin h-5 w-5 text-indigo-600', className)}
       viewBox="0 0 24 24"
       role="status"
-      aria-label="Загрузка"
+      aria-label={t('common.loading')}
     >
       <circle
         className="opacity-25"

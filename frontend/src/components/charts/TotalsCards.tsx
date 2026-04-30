@@ -1,7 +1,8 @@
 'use client';
 
 import { useTotals } from '@/hooks/useCharts';
-import { formatMass, formatPrice } from '@/lib/format';
+import { useT } from '@/i18n/I18nProvider';
+import { useFormatters } from '@/i18n/useFormatters';
 import type { ChartFilters } from '@/types/charts';
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export function TotalsCards({ filters }: Props) {
+  const t = useT();
   const { data, isLoading, error } = useTotals(filters.year, {
     tnved: filters.tnved,
     region_id: filters.region_id,
@@ -18,7 +20,7 @@ export function TotalsCards({ filters }: Props) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
       <Card
-        label="Умумий"
+        label={t('totals.total')}
         color="bg-purple-500"
         total={data?.total.total}
         massa={data?.total.massa}
@@ -26,7 +28,7 @@ export function TotalsCards({ filters }: Props) {
         error={error}
       />
       <Card
-        label="Импорт"
+        label={t('totals.import')}
         color="bg-teal-500"
         total={data?.import_.total}
         massa={data?.import_.massa}
@@ -34,7 +36,7 @@ export function TotalsCards({ filters }: Props) {
         error={error}
       />
       <Card
-        label="Экспорт"
+        label={t('totals.export')}
         color="bg-sky-500"
         total={data?.export.total}
         massa={data?.export.massa}
@@ -60,6 +62,8 @@ function Card({
   loading: boolean;
   error: unknown;
 }) {
+  const t = useT();
+  const { formatPrice, formatMass } = useFormatters();
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
       <div className="flex items-center gap-2 mb-3">
@@ -67,7 +71,7 @@ function Card({
         <p className="text-sm font-medium text-gray-500">{label}</p>
       </div>
       {error ? (
-        <p className="text-sm text-red-500">Ошибка</p>
+        <p className="text-sm text-red-500">{t('common.error')}</p>
       ) : loading ? (
         <>
           <div className="h-7 w-32 bg-gray-100 rounded animate-pulse mb-2" />

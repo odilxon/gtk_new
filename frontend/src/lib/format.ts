@@ -4,7 +4,7 @@ export function formatPrice(value: number | null | undefined): string {
   let suffix = '';
   if (n >= 1000) {
     n = n / 1000;
-    suffix = ' тыс';
+    suffix = ' минг';
   }
   if (n >= 1000) {
     n = n / 1000;
@@ -27,7 +27,7 @@ export function formatMass(value: number | null | undefined): string {
   }
   if (n >= 1000) {
     n = n / 1000;
-    suffix = ' тыс. т';
+    suffix = ' минг т';
   }
   return n.toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + suffix;
 }

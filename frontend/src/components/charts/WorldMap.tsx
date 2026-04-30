@@ -4,7 +4,8 @@ import type { EChartsOption } from 'echarts';
 import { useEffect, useMemo, useState } from 'react';
 
 import { useWorld } from '@/hooks/useCharts';
-import { formatMass, formatPrice } from '@/lib/format';
+import { useT } from '@/i18n/I18nProvider';
+import { useFormatters } from '@/i18n/useFormatters';
 import type { ChartFilters, ChartRegime, WorldPoint } from '@/types/charts';
 
 import { ChartCard } from './ChartCard';
@@ -23,6 +24,8 @@ interface Props {
 export function WorldMap({ title, regime, filters }: Props) {
   const [mapReady, setMapReady] = useState(mapRegistered);
   const { data, isLoading, error } = useWorld(filters.year, regime, filters);
+  const t = useT();
+  const { formatPrice, formatMass } = useFormatters();
 
   useEffect(() => {
     if (mapRegistered) {
@@ -55,9 +58,7 @@ export function WorldMap({ title, regime, filters }: Props) {
           const p = (params as { data?: { payload?: WorldPoint } }).data?.payload;
           if (!p) return (params as { name: string }).name;
           return `<b>${p.name_uz ?? p.name}</b><br/>
-            Умумий: <b>${formatPrice(p.value)} $</b> | ${formatMass(p.massa)}<br/>
-            Мева-сабзавот: ${formatPrice(p.meva_value)} $ | ${formatMass(p.meva_massa)}<br/>
-            Озиқ-овқат: ${formatPrice(p.oziq_value)} $ | ${formatMass(p.oziq_massa)}`;
+            ${t('totals.total')}: <b>${formatPrice(p.value)} $</b> | ${formatMass(p.massa)}`;
         },
       },
       visualMap: {
@@ -82,7 +83,7 @@ export function WorldMap({ title, regime, filters }: Props) {
         },
       ],
     };
-  }, [data, mapReady, regime]);
+  }, [data, mapReady, regime, formatPrice, formatMass, t]);
 
   return (
     <ChartCard title={title} loading={isLoading || !mapReady} error={error}>
