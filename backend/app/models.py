@@ -1,6 +1,7 @@
 import enum
 
 from sqlalchemy import (
+    CHAR,
     Column,
     Date,
     DateTime,
@@ -103,6 +104,9 @@ class GTK(Base):
     # Excel на 1000 при загрузке. Старые записи поправил scripts/fix_prices.
     price_thousand = Column(Float)
     date = Column(Date, nullable=False)
+    # SHA-256 от канонического представления строки. UNIQUE — для дедупа
+    # при повторной загрузке Excel. Формат строки и хеша — в gtk_etl.py.
+    dedup_hash = Column(CHAR(64), nullable=False, unique=True, index=True)
 
     country = relationship("Country", back_populates="gtk_records")
     region = relationship("Region", back_populates="gtk_records")

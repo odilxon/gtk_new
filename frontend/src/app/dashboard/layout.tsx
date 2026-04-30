@@ -28,7 +28,10 @@ function DashboardShell({ children }: { children: ReactNode }) {
     { href: '/dashboard/gtk', label: t('nav.gtk') },
     { href: '/dashboard/charts', label: t('nav.charts') },
     ...(isAdmin
-      ? [{ href: '/dashboard/users', label: t('nav.users') }]
+      ? [
+          { href: '/dashboard/users', label: t('nav.users') },
+          { href: '/dashboard/upload', label: t('nav.upload') },
+        ]
       : []),
   ];
 

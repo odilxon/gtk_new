@@ -22,6 +22,7 @@ const uz = {
     gtk: 'GTK Маълумотлари',
     charts: 'Аналитика',
     users: 'Фойдаланувчилар',
+    upload: 'Excel юклаш',
     logout: 'Чиқиш',
   },
   common: {
@@ -143,6 +144,24 @@ const uz = {
     notFound: 'Фойдаланувчилар топилмади',
     selfWarn: 'Ўзингизни ўзгартира олмайсиз',
   },
+  upload: {
+    title: 'Excel файлни юклаш',
+    subtitle: 'GTK маълумотларини .xlsx форматда юкланг. Дубликатлар автоматик равишда ўтказилади.',
+    pickFile: 'Файлни танланг',
+    selected: 'Танланди: {name} ({size} MB)',
+    submit: 'Юклаш ва БДга жўнатиш',
+    uploading: 'Юкланмоқда — {percent}%',
+    processing: 'Сервер маълумотларни қайта ишлаяпти, бу бир неча дақиқа давом этиши мумкин…',
+    resultTitle: 'Натижа',
+    rowsTotal: 'Файлдаги қаторлар',
+    added: 'Қўшилди',
+    duplicatesSkipped: 'Дубликат сифатида ўтказилди',
+    invalidSkipped: 'Нотўғри маълумот туфайли ўтказилди',
+    duration: 'Жараён давомийлиги',
+    errorTitle: 'Юклашда хатолик',
+    sizeLimit: 'Энг катта ўлчам — 100 MB',
+    onlyXlsx: 'Фақат .xlsx файллар қабул қилинади',
+  },
 };
 
 const ru: typeof uz = {
@@ -166,6 +185,7 @@ const ru: typeof uz = {
     gtk: 'GTK Данные',
     charts: 'Аналитика',
     users: 'Пользователи',
+    upload: 'Загрузка Excel',
     logout: 'Выйти',
   },
   common: {
@@ -287,6 +307,24 @@ const ru: typeof uz = {
     notFound: 'Пользователи не найдены',
     selfWarn: 'Себя редактировать нельзя',
   },
+  upload: {
+    title: 'Загрузка Excel-файла',
+    subtitle: 'Загрузите GTK-данные в формате .xlsx. Дубликаты будут автоматически пропущены.',
+    pickFile: 'Выберите файл',
+    selected: 'Выбран: {name} ({size} MB)',
+    submit: 'Загрузить и записать в БД',
+    uploading: 'Загрузка — {percent}%',
+    processing: 'Сервер обрабатывает данные, это может занять несколько минут…',
+    resultTitle: 'Результат',
+    rowsTotal: 'Строк в файле',
+    added: 'Добавлено',
+    duplicatesSkipped: 'Пропущено как дубликаты',
+    invalidSkipped: 'Пропущено из-за некорректных данных',
+    duration: 'Время обработки',
+    errorTitle: 'Ошибка загрузки',
+    sizeLimit: 'Максимальный размер — 100 MB',
+    onlyXlsx: 'Принимаются только .xlsx файлы',
+  },
 };
 
 const en: typeof uz = {
@@ -310,6 +348,7 @@ const en: typeof uz = {
     gtk: 'GTK Data',
     charts: 'Analytics',
     users: 'Users',
+    upload: 'Upload Excel',
     logout: 'Logout',
   },
   common: {
@@ -430,6 +469,24 @@ const en: typeof uz = {
     actions: 'Actions',
     notFound: 'No users found',
     selfWarn: 'You cannot edit yourself',
+  },
+  upload: {
+    title: 'Upload Excel file',
+    subtitle: 'Upload GTK data in .xlsx format. Duplicates are skipped automatically.',
+    pickFile: 'Choose a file',
+    selected: 'Selected: {name} ({size} MB)',
+    submit: 'Upload and import',
+    uploading: 'Uploading — {percent}%',
+    processing: 'Server is processing the data, this may take a few minutes…',
+    resultTitle: 'Result',
+    rowsTotal: 'Rows in file',
+    added: 'Added',
+    duplicatesSkipped: 'Skipped as duplicates',
+    invalidSkipped: 'Skipped due to invalid data',
+    duration: 'Processing time',
+    errorTitle: 'Upload failed',
+    sizeLimit: 'Max size: 100 MB',
+    onlyXlsx: 'Only .xlsx files are accepted',
   },
 };
 

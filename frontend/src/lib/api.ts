@@ -10,6 +10,7 @@ import type {
   Paginated,
   ProductItem,
   TnvedSearchItem,
+  UploadGtkResult,
   User,
   UserAdmin,
   UserCreatePayload,
@@ -138,6 +139,32 @@ export const gtkApi = {
 
   stats: async (): Promise<GTKStats> => {
     const { data } = await api.get<GTKStats>('/api/gtk/stats');
+    return data;
+  },
+};
+
+export const adminApi = {
+  uploadGtk: async (
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<UploadGtkResult> => {
+    const form = new FormData();
+    form.append('file', file);
+    const { data } = await api.post<UploadGtkResult>(
+      '/api/admin/upload-gtk',
+      form,
+      {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        // Excel может быть большим, ETL может занимать минуты — выключаем
+        // дефолтный таймаут axios для этого вызова.
+        timeout: 0,
+        onUploadProgress: (e) => {
+          if (onProgress && e.total) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        },
+      },
+    );
     return data;
   },
 };

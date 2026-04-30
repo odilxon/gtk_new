@@ -35,6 +35,20 @@ export interface UserUpdatePayload {
   is_admin?: boolean;
 }
 
+export interface UploadGtkResult {
+  rows_total: number;
+  added: number;
+  duplicates_skipped: number;
+  invalid_skipped: number;
+  countries: number;
+  regions: number;
+  categories: number;
+  products: number;
+  companies_uzb: number;
+  companies_foreign: number;
+  duration_ms: number;
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: string;
