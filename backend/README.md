@@ -17,7 +17,7 @@ backend/
 │   └── services/            # бизнес-логика отдельно от хендлеров
 ├── alembic/                 # миграции
 ├── scripts/
-│   ├── db_load.py           # ETL из Excel в БД (load / clean / drop)
+│   ├── db_load.py           # CLI-обёртка над app/services/gtk_etl
 │   ├── enrich.py            # обогащение: ISO коды стран + области из адресов
 │   ├── fix_prices.py        # одноразовая миграция gtk.price_thousand × 1000
 │   └── set_password.py      # CLI для создания/смены пароля пользователя
@@ -129,6 +129,7 @@ python -m scripts.set_password admin Admin123!
 | POST  | `/api/users` | создать пользователя (только админ) |
 | PATCH | `/api/users/{id}` | обновить (email/full_name/password/is_active/is_admin, только админ) |
 | DELETE| `/api/users/{id}` | удалить пользователя (только админ) |
+| POST  | `/api/admin/upload-gtk` | мультипарт-загрузка Excel в `gtk` (только админ) |
 | GET   | `/api/gtk` | список с фильтрами и пагинацией |
 | GET   | `/api/gtk/stats` | агрегаты: импорт/экспорт, топ-5 стран и категорий |
 | GET   | `/api/countries` \| `/api/regions` \| `/api/categories` | справочники |
@@ -160,6 +161,18 @@ python -m scripts.set_password admin Admin123!
   а старые данные были разово приведены `scripts/fix_prices.py`. Не запускай
   `fix-prices` повторно — операция не идемпотентна, второй прогон умножит ещё
   раз на 1000.
+- **Дедуп `gtk` по `dedup_hash`.** В колонке лежит SHA-256 от канонической
+  pipe-строки полей `(date|regime|country_id|product_id|company_uzb_id|
+  company_foreign_id|address_uz|address_foreign|unit|weight|quantity|
+  price_thousand)`. Числа форматируются как `f"{v:.6f}"`, NULL → пустая
+  строка, дата — `isoformat()`. Эта же функция (`compute_row_hash` в
+  `app/services/gtk_etl.py`) вызывается из миграции `0003_gtk_dedup_hash`
+  для бэкфилла. Менять формат можно **только** новой миграцией,
+  пересчитывающей все хеши, иначе runtime-инсёрты перестанут совпадать
+  с уже залитыми строками.
+- ETL общий: и `python -m scripts.db_load load` и `POST /api/admin/upload-gtk`
+  идут через `gtk_etl.load_excel`, который вставляет `gtk` через
+  `INSERT … ON CONFLICT (dedup_hash) DO NOTHING` батчами по 5000.
 - Колонки `users.created_at` / `users.updated_at` объявлены как
   `Column(DateTime)` без `timezone=True`, и в БД лежат как
   `TIMESTAMP WITHOUT TIME ZONE`. asyncpg запрещает биндить tz-aware значения

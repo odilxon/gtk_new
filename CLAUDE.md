@@ -20,9 +20,9 @@ backend/
 │   ├── models.py      # ORM — single source of truth (also used by Alembic + ETL)
 │   ├── security.py    # bcrypt (direct), JWT, get_current_user, get_current_admin
 │   ├── schemas/       # Pydantic: auth, gtk, charts, common
-│   ├── routers/       # auth, users, gtk, lookups, charts (APIRouter per domain)
-│   └── services/      # business logic; charts.py + tnved_groups.py for analytics
-├── alembic/           # migrations (0001_initial, 0002_country_iso)
+│   ├── routers/       # auth, users, admin, gtk, lookups, charts (APIRouter per domain)
+│   └── services/      # business logic; charts.py + tnved_groups.py + gtk_etl.py
+├── alembic/           # migrations (0001_initial, 0002_country_iso, 0003_gtk_dedup_hash)
 ├── scripts/
 │   ├── db_load.py     # ETL Excel → DB (multiplies "Цена(тыс)" by 1000 at insert)
 │   ├── enrich.py      # ISO codes + region extraction from address_uz
@@ -116,6 +116,18 @@ Visualizes import/export aggregates with ECharts. Powered by `/api/charts/*`:
 - `/top-organizations`, `/top-countries` — bar-chart data
 - `/regions` — Uzbekistan regions for the choropleth (uses `gtk.region_id`)
 - `/world` — countries for the world choropleth (uses `Country.iso_code`)
+
+## Excel upload + dedup
+
+Admins can upload Excel files via `/dashboard/upload` or `POST /api/admin/upload-gtk`. The endpoint streams the multipart file to a temp path, runs the same ETL as the CLI (`scripts/db_load.py` is now a thin wrapper around `app/services/gtk_etl.py:load_excel`), and post-processes with `enrich_countries` only — region enrichment from `address_uz` was dropped per product decision.
+
+Dedup is enforced by a unique hash on `gtk.dedup_hash`:
+
+- `compute_row_hash` (in `gtk_etl.py`) returns SHA-256 of `date|regime|country_id|product_id|company_uzb_id|company_foreign_id|address_uz|address_foreign|unit|weight|quantity|price_thousand`. Numbers formatted as `f"{v:.6f}"`, NULL → empty string, `regime` as enum value (`ИМ`/`ЭК`).
+- Inserts go through `pg_insert(...).on_conflict_do_nothing(index_elements=['dedup_hash'])` in batches of 5000. Counts `added` vs `duplicates_skipped` (intra-batch + DB conflicts) vs `invalid_skipped` (rows missing required FKs / unparseable date).
+- **Don't change the hash format** without a new migration that recomputes all existing hashes — runtime inserts and the migration backfill must stay in lockstep.
+- Migration `0003_gtk_dedup_hash` adds the column nullable, backfills via the same Python function in 5000-row windows, removes pre-existing dup rows (keep oldest id), then sets NOT NULL + UNIQUE INDEX. On the existing ~3M-row dataset this takes a few minutes.
+- 100 MB upload size cap is enforced both in `routers/admin.py` (chunked read) and in the frontend page (`MAX_BYTES`).
 
 ## User management
 
