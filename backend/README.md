@@ -125,6 +125,10 @@ python -m scripts.set_password admin Admin123!
 | POST  | `/api/auth/register` | регистрация |
 | POST  | `/api/auth/login` | логин, возвращает JWT |
 | GET   | `/api/auth/me` | текущий пользователь (Bearer токен) |
+| GET   | `/api/users` | список пользователей (только админ) |
+| POST  | `/api/users` | создать пользователя (только админ) |
+| PATCH | `/api/users/{id}` | обновить (email/full_name/password/is_active/is_admin, только админ) |
+| DELETE| `/api/users/{id}` | удалить пользователя (только админ) |
 | GET   | `/api/gtk` | список с фильтрами и пагинацией |
 | GET   | `/api/gtk/stats` | агрегаты: импорт/экспорт, топ-5 стран и категорий |
 | GET   | `/api/countries` \| `/api/regions` \| `/api/categories` | справочники |
@@ -156,6 +160,16 @@ python -m scripts.set_password admin Admin123!
   а старые данные были разово приведены `scripts/fix_prices.py`. Не запускай
   `fix-prices` повторно — операция не идемпотентна, второй прогон умножит ещё
   раз на 1000.
+- Колонки `users.created_at` / `users.updated_at` объявлены как
+  `Column(DateTime)` без `timezone=True`, и в БД лежат как
+  `TIMESTAMP WITHOUT TIME ZONE`. asyncpg запрещает биндить tz-aware значения
+  в naive колонки — поэтому `services/auth.py` и `services/users.py`
+  записывают `datetime.utcnow()` (наивное), а **не** `datetime.now(timezone.utc)`.
+  Если меняешь модель на `timezone=True`, нужна миграция и обратный переход.
+- `/api/users/*` защищён через `Depends(get_current_admin)` на уровне роутера.
+  Дополнительно роуты `PATCH`/`DELETE` запрещают админу деактивировать,
+  разжаловать или удалить самого себя — иначе можно лишиться единственного
+  админа в системе.
 - `enrich.regions` использует bulk-UPDATE по подстроке (ILIKE) для каждого
   алиаса региона; список включает узбекские и русские варианты
   («Тошкент шаҳри», «г. Ташкент», «Самарқанд», «Самарканд» …). Сортировка

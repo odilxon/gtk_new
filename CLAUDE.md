@@ -20,7 +20,7 @@ backend/
 │   ├── models.py      # ORM — single source of truth (also used by Alembic + ETL)
 │   ├── security.py    # bcrypt (direct), JWT, get_current_user, get_current_admin
 │   ├── schemas/       # Pydantic: auth, gtk, charts, common
-│   ├── routers/       # auth, gtk, lookups, charts (APIRouter per domain)
+│   ├── routers/       # auth, users, gtk, lookups, charts (APIRouter per domain)
 │   └── services/      # business logic; charts.py + tnved_groups.py for analytics
 ├── alembic/           # migrations (0001_initial, 0002_country_iso)
 ├── scripts/
@@ -49,6 +49,7 @@ backend/
 - All `/api/*` routes except `/api/auth/*` and `/health` require auth (router-level `Depends(get_current_user)`).
 - `SECRET_KEY` comes from `.env`. Rotate on deploy.
 - Use `python -m scripts.set_password <user> <pwd>` to create/update users from CLI.
+- An admin user can also manage accounts via `/dashboard/users` (UI) or `/api/users/*` (CRUD, all guarded by `Depends(get_current_admin)`). The router refuses to let an admin deactivate, revoke `is_admin` from, or delete themselves to avoid lockout.
 
 ### Frontend ↔ backend wiring
 
@@ -116,6 +117,14 @@ Visualizes import/export aggregates with ECharts. Powered by `/api/charts/*`:
 - `/regions` — Uzbekistan regions for the choropleth (uses `gtk.region_id`)
 - `/world` — countries for the world choropleth (uses `Country.iso_code`)
 
+## User management
+
+Admin-only CRUD at `/api/users` and `/dashboard/users`:
+
+- Create users with `username`/`email`/`password`/`full_name`/`is_active`/`is_admin`.
+- Edit any field except `username` (treated as immutable identity); leaving the password blank in the edit form keeps the existing hash.
+- Self-protection: the API refuses to let an admin deactivate, revoke admin from, or delete themselves; the UI mirrors this by disabling the delete button for the current user and showing a "self" badge.
+
 All chart endpoints (and `/api/gtk`) accept `tnved: list[str]`.
 `/api/products/tnved-search?q=<3+>` is the async lookup powering the
 multi-select. The frontend supports a `707*` wildcard: it strips the `*`,
@@ -150,5 +159,7 @@ cards have been removed from `/dashboard/charts`. `UzbekistanMap.tsx` and
 - ETL commits in batches of 20000 rows (was 500). `gtk` itself has no dedup, so re-running `load` on the same file double-inserts; use `manage.sh reload` (or `fresh`) for re-import.
 - ECharts `world.json` has only `{name, childNum}` in feature properties — no ISO codes. `frontend/src/components/charts/worldMapNames.ts` ships a static ISO-2 → ECharts-name dictionary; do **not** try to read `iso_a2` from the geojson.
 - Axios v1's default array serialization is `?key[0]=a&key[1]=b`, which doesn't bind to FastAPI `Query(list[str])`. `frontend/src/lib/api.ts` configures a custom `paramsSerializer` that emits repeated keys (`?key=a&key=b`). Keep it when adding new endpoints with array params.
-- The dashboard layout uses a sticky **top header**, not a sidebar (was a sidebar). `/dashboard/charts` uses `max-w-screen-2xl` to use the freed width; `/dashboard/gtk` stays at `max-w-7xl`.
+- The dashboard layout uses a sticky **top header**, not a sidebar (was a sidebar). `/dashboard/charts` uses `max-w-screen-2xl` to use the freed width; `/dashboard/gtk` stays at `max-w-7xl` for the header/filters block but the table card escapes that wrapper to span the full main width.
+- **Naive datetimes for the `users` table.** `users.created_at` / `users.updated_at` are `Column(DateTime)` without `timezone=True`, so the column type is `TIMESTAMP WITHOUT TIME ZONE`. asyncpg refuses to bind tz-aware values into naive columns — services write `datetime.utcnow()`, not `datetime.now(timezone.utc)`. If you ever swap to a tz-aware column, update both `services/auth.py:register_user` and `services/users.py` (`_now()`).
+- The dashboard nav item "Foydalanuvchilar / Пользователи / Users" only appears when `me.is_admin === 1`; the page itself also redirects non-admins back to `/dashboard`. Backend is the source of truth via `get_current_admin` — UI guards are convenience only.
 - `/dashboard/gtk` filters use a **draft + apply** pattern: editing fields updates a local draft and shows a "не применено" badge. The query only fires when the user clicks **Обновить** (or presses Enter inside the form). Pagination changes apply directly without going through the draft.
