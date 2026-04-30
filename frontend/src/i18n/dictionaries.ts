@@ -21,6 +21,7 @@ const uz = {
   nav: {
     gtk: 'GTK Маълумотлари',
     charts: 'Аналитика',
+    users: 'Фойдаланувчилар',
     logout: 'Чиқиш',
   },
   common: {
@@ -35,6 +36,14 @@ const uz = {
     loading: 'Юкланмоқда',
     retry: 'Қайта уриниш',
     notFound: 'Топилмади',
+    save: 'Сақлаш',
+    cancel: 'Бекор қилиш',
+    delete: 'Ўчириш',
+    edit: 'Таҳрирлаш',
+    yes: 'Ҳа',
+    no: 'Йўқ',
+    saving: 'Сақланмоқда…',
+    confirmDelete: '"{name}" ни ўчиришни тасдиқлайсизми?',
   },
   gtk: {
     title: 'GTK Маълумотлари',
@@ -116,6 +125,24 @@ const uz = {
     t: 'т',
     kt: 'минг т',
   },
+  users: {
+    title: 'Фойдаланувчиларни бошқариш',
+    subtitle: 'Тизимга кириш ҳуқуқига эга фойдаланувчилар',
+    create: 'Янги фойдаланувчи',
+    createTitle: 'Янги фойдаланувчи қўшиш',
+    editTitle: 'Фойдаланувчини таҳрирлаш',
+    username: 'Фойдаланувчи номи',
+    email: 'Email',
+    fullName: 'Тўлиқ исм',
+    password: 'Парол',
+    passwordHint: 'Бўш қолдирилса парол ўзгармайди',
+    isActive: 'Фаол',
+    isAdmin: 'Админ',
+    createdAt: 'Яратилган сана',
+    actions: 'Амаллар',
+    notFound: 'Фойдаланувчилар топилмади',
+    selfWarn: 'Ўзингизни ўзгартира олмайсиз',
+  },
 };
 
 const ru: typeof uz = {
@@ -138,6 +165,7 @@ const ru: typeof uz = {
   nav: {
     gtk: 'GTK Данные',
     charts: 'Аналитика',
+    users: 'Пользователи',
     logout: 'Выйти',
   },
   common: {
@@ -152,6 +180,14 @@ const ru: typeof uz = {
     loading: 'Загрузка',
     retry: 'Повторить',
     notFound: 'Не найдено',
+    save: 'Сохранить',
+    cancel: 'Отмена',
+    delete: 'Удалить',
+    edit: 'Изменить',
+    yes: 'Да',
+    no: 'Нет',
+    saving: 'Сохранение…',
+    confirmDelete: 'Удалить "{name}"?',
   },
   gtk: {
     title: 'GTK Данные',
@@ -233,6 +269,24 @@ const ru: typeof uz = {
     t: 'т',
     kt: 'тыс. т',
   },
+  users: {
+    title: 'Управление пользователями',
+    subtitle: 'Пользователи с доступом в систему',
+    create: 'Новый пользователь',
+    createTitle: 'Добавить пользователя',
+    editTitle: 'Редактировать пользователя',
+    username: 'Логин',
+    email: 'Email',
+    fullName: 'Полное имя',
+    password: 'Пароль',
+    passwordHint: 'Оставьте пустым, чтобы не менять',
+    isActive: 'Активен',
+    isAdmin: 'Админ',
+    createdAt: 'Дата создания',
+    actions: 'Действия',
+    notFound: 'Пользователи не найдены',
+    selfWarn: 'Себя редактировать нельзя',
+  },
 };
 
 const en: typeof uz = {
@@ -255,6 +309,7 @@ const en: typeof uz = {
   nav: {
     gtk: 'GTK Data',
     charts: 'Analytics',
+    users: 'Users',
     logout: 'Logout',
   },
   common: {
@@ -269,6 +324,14 @@ const en: typeof uz = {
     loading: 'Loading',
     retry: 'Retry',
     notFound: 'Not found',
+    save: 'Save',
+    cancel: 'Cancel',
+    delete: 'Delete',
+    edit: 'Edit',
+    yes: 'Yes',
+    no: 'No',
+    saving: 'Saving…',
+    confirmDelete: 'Delete "{name}"?',
   },
   gtk: {
     title: 'GTK Data',
@@ -349,6 +412,24 @@ const en: typeof uz = {
     kg: 'kg',
     t: 't',
     kt: 'kt',
+  },
+  users: {
+    title: 'User management',
+    subtitle: 'Users with access to the system',
+    create: 'New user',
+    createTitle: 'Add user',
+    editTitle: 'Edit user',
+    username: 'Username',
+    email: 'Email',
+    fullName: 'Full name',
+    password: 'Password',
+    passwordHint: 'Leave blank to keep current',
+    isActive: 'Active',
+    isAdmin: 'Admin',
+    createdAt: 'Created at',
+    actions: 'Actions',
+    notFound: 'No users found',
+    selfWarn: 'You cannot edit yourself',
   },
 };
 

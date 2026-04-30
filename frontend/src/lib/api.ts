@@ -11,6 +11,9 @@ import type {
   ProductItem,
   TnvedSearchItem,
   User,
+  UserAdmin,
+  UserCreatePayload,
+  UserUpdatePayload,
 } from '@/types/api';
 import type {
   ChartFilters,
@@ -136,6 +139,24 @@ export const gtkApi = {
   stats: async (): Promise<GTKStats> => {
     const { data } = await api.get<GTKStats>('/api/gtk/stats');
     return data;
+  },
+};
+
+export const usersApi = {
+  list: async (): Promise<UserAdmin[]> => {
+    const { data } = await api.get<UserAdmin[]>('/api/users');
+    return data;
+  },
+  create: async (payload: UserCreatePayload): Promise<UserAdmin> => {
+    const { data } = await api.post<UserAdmin>('/api/users', payload);
+    return data;
+  },
+  update: async (id: number, payload: UserUpdatePayload): Promise<UserAdmin> => {
+    const { data } = await api.patch<UserAdmin>(`/api/users/${id}`, payload);
+    return data;
+  },
+  remove: async (id: number): Promise<void> => {
+    await api.delete(`/api/users/${id}`);
   },
 };
 

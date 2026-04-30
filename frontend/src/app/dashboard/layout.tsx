@@ -6,7 +6,7 @@ import { ReactNode } from 'react';
 
 import { AuthGuard } from '@/components/AuthGuard';
 import { LanguageSwitcher } from '@/components/ui';
-import { useLogout } from '@/hooks/useAuth';
+import { useCurrentUser, useLogout } from '@/hooks/useAuth';
 import { useT } from '@/i18n/I18nProvider';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
@@ -21,10 +21,15 @@ function DashboardShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const logout = useLogout();
   const t = useT();
+  const { data: me } = useCurrentUser();
+  const isAdmin = !!me && me.is_admin === 1;
 
   const navItems = [
     { href: '/dashboard/gtk', label: t('nav.gtk') },
     { href: '/dashboard/charts', label: t('nav.charts') },
+    ...(isAdmin
+      ? [{ href: '/dashboard/users', label: t('nav.users') }]
+      : []),
   ];
 
   return (

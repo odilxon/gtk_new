@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
@@ -28,7 +28,7 @@ async def register_user(db: AsyncSession, data: UserCreate) -> User:
         full_name=data.full_name,
         is_active=1,
         is_admin=0,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.utcnow(),
     )
     db.add(user)
     await db.commit()

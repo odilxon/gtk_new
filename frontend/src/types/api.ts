@@ -8,6 +8,33 @@ export interface User {
   is_admin: number;
 }
 
+export interface UserAdmin {
+  id: number;
+  username: string;
+  email: string;
+  full_name: string | null;
+  is_active: number;
+  is_admin: number;
+  created_at: string | null;
+}
+
+export interface UserCreatePayload {
+  username: string;
+  email: string;
+  password: string;
+  full_name?: string | null;
+  is_active?: boolean;
+  is_admin?: boolean;
+}
+
+export interface UserUpdatePayload {
+  email?: string;
+  full_name?: string | null;
+  password?: string;
+  is_active?: boolean;
+  is_admin?: boolean;
+}
+
 export interface LoginResponse {
   access_token: string;
   token_type: string;
