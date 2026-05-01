@@ -1,0 +1,22 @@
+[Unit]
+Description=MyApp FastAPI
+After=network.target
+
+[Service]
+Type=exec
+WorkingDirectory=/home/odya/gtk_new/backend
+ExecStart=/home/odya/gtk_new/backend/env/bin/uvicorn app.main:app \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --workers 4 \
+    --proxy-headers \
+    --forwarded-allow-ips=*
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+Environment=PYTHONUNBUFFERED=1
+EnvironmentFile=/home/odya/gtk_new/backend/.env
+
+[Install]
+WantedBy=multi-user.target
