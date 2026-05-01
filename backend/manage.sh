@@ -16,7 +16,7 @@
 set -e
 
 cd "$(dirname "$0")"
-source env/Scripts/activate
+source env/bin/activate
 
 cmd="${1:-}"
 
