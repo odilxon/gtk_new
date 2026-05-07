@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ReactNode } from 'react';
@@ -41,9 +42,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
         <div className="px-6 h-14 flex items-center justify-between gap-6">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">GTK</span>
-              </div>
+              <Image src="/logo.jpg" alt="logo" width={32} height={32} className="rounded-lg object-contain" />
               <span className="font-semibold text-gray-900 hidden sm:inline">
                 {t('app.dashboard')}
               </span>

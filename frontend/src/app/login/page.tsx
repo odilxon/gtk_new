@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { FormEvent, useState } from 'react';
 
 import { RedirectIfAuth } from '@/components/AuthGuard';
@@ -39,7 +40,7 @@ function LoginForm() {
           <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl" />
         </div>
         <div className="relative z-10 flex flex-col justify-center items-center w-full text-white px-12">
-          <h2 className="text-5xl font-bold mb-4 text-center">GTK</h2>
+          <Image src="/logo.jpg" alt="logo" width={120} height={120} className="mb-4 rounded-xl object-contain" />
           <p className="text-xl text-purple-200 text-center max-w-md">
             {t('app.title')}
           </p>

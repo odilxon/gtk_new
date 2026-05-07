@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'GTK Dashboard',
-  description: 'Ўзбекистон ташқи савдо статистикаси',
+  title: 'Бозор фаолияти',
+  description: 'Бозор савдо фаолияти',
 };
 
 export default function RootLayout({
