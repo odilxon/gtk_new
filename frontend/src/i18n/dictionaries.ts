@@ -3,7 +3,7 @@
 
 const uz = {
   app: {
-    title: 'Ўзбекистон ташқи савдо статистикаси',
+    title: 'Бозор фаолияти',
     tagline: 'Импорт ва экспортни таҳлил қилиш',
     dashboard: 'Бошқарув панели',
   },
@@ -19,7 +19,7 @@ const uz = {
     invalid: 'Логин ёки парол нотўғри',
   },
   nav: {
-    gtk: 'GTK Маълумотлари',
+    gtk: 'Маълумотлар',
     charts: 'Аналитика',
     users: 'Фойдаланувчилар',
     upload: 'Excel юклаш',
@@ -47,8 +47,8 @@ const uz = {
     confirmDelete: '"{name}" ни ўчиришни тасдиқлайсизми?',
   },
   gtk: {
-    title: 'GTK Маълумотлари',
-    subtitle: 'Ўзбекистон ташқи савдо фаолияти',
+    title: 'Маълумотлар',
+    subtitle: 'Бозор савдо фаолияти',
     notFound: 'Ёзувлар топилмади',
     cols: {
       regime: 'Режим',
@@ -146,7 +146,7 @@ const uz = {
   },
   upload: {
     title: 'Excel файлни юклаш',
-    subtitle: 'GTK маълумотларини .xlsx форматда юкланг. Дубликатлар автоматик равишда ўтказилади.',
+    subtitle: 'Маълумотларни .xlsx форматда юкланг. Дубликатлар автоматик равишда ўтказилади.',
     pickFile: 'Файлни танланг',
     selected: 'Танланди: {name} ({size} MB)',
     submit: 'Юклаш ва БДга жўнатиш',
@@ -166,7 +166,7 @@ const uz = {
 
 const ru: typeof uz = {
   app: {
-    title: 'Внешнеторговая статистика Узбекистана',
+    title: 'Аналитика рынка',
     tagline: 'Анализ импорта и экспорта',
     dashboard: 'Панель управления',
   },
@@ -182,7 +182,7 @@ const ru: typeof uz = {
     invalid: 'Неверный логин или пароль',
   },
   nav: {
-    gtk: 'GTK Данные',
+    gtk: 'Данные',
     charts: 'Аналитика',
     users: 'Пользователи',
     upload: 'Загрузка Excel',
@@ -210,8 +210,8 @@ const ru: typeof uz = {
     confirmDelete: 'Удалить "{name}"?',
   },
   gtk: {
-    title: 'GTK Данные',
-    subtitle: 'Внешнеторговая деятельность Узбекистана',
+    title: 'Данные',
+    subtitle: 'Торговая деятельность',
     notFound: 'Записей не найдено',
     cols: {
       regime: 'Режим',
@@ -309,7 +309,7 @@ const ru: typeof uz = {
   },
   upload: {
     title: 'Загрузка Excel-файла',
-    subtitle: 'Загрузите GTK-данные в формате .xlsx. Дубликаты будут автоматически пропущены.',
+    subtitle: 'Загрузите данные в формате .xlsx. Дубликаты будут автоматически пропущены.',
     pickFile: 'Выберите файл',
     selected: 'Выбран: {name} ({size} MB)',
     submit: 'Загрузить и записать в БД',
@@ -329,7 +329,7 @@ const ru: typeof uz = {
 
 const en: typeof uz = {
   app: {
-    title: 'Uzbekistan foreign trade statistics',
+    title: 'Market Analytics',
     tagline: 'Import and export analytics',
     dashboard: 'Dashboard',
   },
@@ -345,7 +345,7 @@ const en: typeof uz = {
     invalid: 'Invalid username or password',
   },
   nav: {
-    gtk: 'GTK Data',
+    gtk: 'Data',
     charts: 'Analytics',
     users: 'Users',
     upload: 'Upload Excel',
@@ -373,8 +373,8 @@ const en: typeof uz = {
     confirmDelete: 'Delete "{name}"?',
   },
   gtk: {
-    title: 'GTK Data',
-    subtitle: 'Uzbekistan foreign trade',
+    title: 'Data',
+    subtitle: 'Trade activity',
     notFound: 'No records found',
     cols: {
       regime: 'Regime',
@@ -472,7 +472,7 @@ const en: typeof uz = {
   },
   upload: {
     title: 'Upload Excel file',
-    subtitle: 'Upload GTK data in .xlsx format. Duplicates are skipped automatically.',
+    subtitle: 'Upload data in .xlsx format. Duplicates are skipped automatically.',
     pickFile: 'Choose a file',
     selected: 'Selected: {name} ({size} MB)',
     submit: 'Upload and import',
