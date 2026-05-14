@@ -6,36 +6,38 @@ Encoding
 Main DBF (База *.dbf)   : cp1251 (Windows-1251)  — подтверждено: G1A=0xC8,0xCC → "ИМ"
 Lookup DBFs (SLVS03/11) : cp866
 
-Field mapping  DBF → gtk
-------------------------
-G1A            → regime           "ИМ" / "ЭК" (после decode cp1251)
-G7B            → date             Date-поле, YYYYMMDD
-G7A + "/" + G7C→ declaration_number
-G15            → country_id       числовой код → SLVS03 → name/iso2
-G33            → product_id       ТНВЭД 10-зн.; category = "Глава XX" (HS-глава)
-G8CODE2        → company_uzb      STIR (ИНН)
-G8NAME         → companies_uzb.name
-G2NAME         → company_foreign
-P1             → unit             краткое наименование ед.изм.: "кг", "шт" (уже в тексте)
-G38            → weight           нетто, кг
-G35            → gross_weight     брутто, кг
-G45USD         → price_thousand   CIF-стоимость в ФАКТИЧЕСКИХ долларах США
-               (fallback: G22B если G22A=="840", т.е. контракт в USD)
-G22A (числ.)   → currency_code    ISO-4217 numeric → alpha-3: "840"→"USD"
-G22B           → currency_amount  сумма в валюте контракта
-G23            → exchange_rate    UZS за 1 ед. валюты на дату ГТД
-G20B           → incoterms        "CIP", "FOB", "EXW"…
-G20NAME        → incoterms_place  место поставки
-G32            → packages_count
-PAYMFACT20     → customs_duty     уплаченная пошлина, UZS
-PAYMFACT29     → vat_amount       уплаченный НДС, UZS
+Field mapping  DBF → gtk/gtk_all
+---------------------------------
+Поддерживаются два формата: 2020 (51 поле) и 2017 (28 полей).
+Для разноимённых полей используется схема приоритета (2020 → 2017-fallback).
+
+G1A                   → regime           "ИМ" / "ЭК"
+G7B                   → date             YYYYMMDD
+G7A + "/" + G7C       → declaration_number
+G15                   → country_*        числовой ISO-3166 код → SLVS03 → name/iso2
+G33                   → tnved            10-значный ТНВЭД
+G8CODE2 | G8CODE1     → company_uzb_stir STIR/ИНН (2020: G8CODE2; 2017: G8CODE1)
+G8NAME                → company_uzb_name
+G2NAME                → company_foreign_name
+P1                    → unit             "кг", "шт" и т.п.
+G38                   → weight           нетто, кг
+G35                   → gross_weight     брутто, кг
+ZA_ED | KOL_VO        → quantity         (2020: ZA_ED; 2017: KOL_VO)
+G45USD | G45          → price_usd        CIF в USD (2020: G45USD; 2017: G45)
+                        fallback: G22B если G22A=="840"
+G22A (числ.)          → currency_code    ISO-4217 numeric → alpha-3; None в 2017
+G22B | G42            → currency_amount  (2020: G22B; 2017: G42 — сумма по контракту)
+G23                   → exchange_rate    UZS/ед.валюты; None в 2017
+G20B                  → incoterms
+G20NAME               → incoterms_place
+G32                   → packages_count
+PAYMFACT20            → customs_duty     пошлина, UZS; None в 2017
+PAYMFACT29            → vat_amount       НДС, UZS; None в 2017
 
 Ценовая логика
 --------------
-price_thousand хранит ФАКТИЧЕСКИЕ доллары (не тысячи) — так же, как у Excel ETL.
-G45USD = статистическая (CIF) стоимость, уже в USD → присваивается напрямую.
-Умножать на 1000 НЕ нужно (в отличие от Excel-колонки "Цена(тыс)").
-Fallback: G22B используется только когда G45USD==0 и G22A=="840" (USD-контракт).
+price_usd хранит ФАКТИЧЕСКИЕ доллары (не тысячи).
+Приоритет: G45USD → G22B(если G22A=840) → G45 (2017: статистическая CIF в USD).
 """
 from __future__ import annotations
 
@@ -172,19 +174,23 @@ def _parse_date(g7b: str | None) -> _date | None:
 
 
 def _resolve_price(row: dict[str, Any]) -> float | None:
-    """Фактическая стоимость в USD для поля price_thousand.
+    """Фактическая стоимость в USD.
 
     Приоритет:
-    1. G45USD — CIF-стоимость, уже в USD.
-    2. G22B   — только если валюта контракта USD (G22A == "840").
+    1. G45USD — CIF в USD (формат 2020).
+    2. G22B   — сумма контракта, только если G22A=="840" (USD-контракт).
+    3. G45    — статистическая CIF-стоимость в USD (формат 2017; поле без суффикса).
     """
-    g45 = row.get("G45USD")
-    if g45 and g45 > 0:
-        return float(g45)
+    g45usd = row.get("G45USD")
+    if g45usd and g45usd > 0:
+        return float(g45usd)
     if (row.get("G22A") or "").strip() == "840":
         g22b = row.get("G22B")
         if g22b and g22b > 0:
             return float(g22b)
+    g45 = row.get("G45")
+    if g45 and g45 > 0:
+        return float(g45)
     return None
 
 
@@ -561,7 +567,8 @@ def load_dbf(
                 new_products[tnved] = cat_name
 
             # — компания УзБ ───────────────────────────────────────────────
-            stir     = (raw.get("G8CODE2") or "").strip() or None
+            # G8CODE2 = 2020-формат, G8CODE1 = 2017-формат
+            stir     = (raw.get("G8CODE2") or raw.get("G8CODE1") or "").strip() or None
             uzb_name = (raw.get("G8NAME")  or "").strip() or None
             if stir and stir not in uzb_by_stir and stir not in new_uzb and uzb_name:
                 new_uzb[stir] = uzb_name
@@ -575,12 +582,12 @@ def load_dbf(
             unit      = (raw.get("P1") or "").strip() or None
             weight    = raw.get("G38")              # нетто
             gross_wt  = raw.get("G35")              # брутто
-            quantity  = raw.get("ZA_ED")
+            quantity  = raw.get("ZA_ED") or raw.get("KOL_VO")   # ZA_ED=2020, KOL_VO=2017
             price_usd = _resolve_price(raw)
 
             g22a_raw  = (raw.get("G22A") or "").strip()
             cur_code  = _currency_alpha(g22a_raw)
-            cur_amt   = raw.get("G22B")
+            cur_amt   = raw.get("G22B") or raw.get("G42")  # G22B=2020, G42=2017
             ex_rate   = raw.get("G23")
 
             g7a  = (raw.get("G7A") or "").strip()
@@ -807,14 +814,15 @@ def load_dbf_flat(
 
             # ── Компании ─────────────────────────────────────────────────
             company_uzb_name     = raw.get("G8NAME")
-            company_uzb_stir     = (raw.get("G8CODE2") or "").strip() or None
+            # G8CODE2=2020, G8CODE1=2017
+            company_uzb_stir     = (raw.get("G8CODE2") or raw.get("G8CODE1") or "").strip() or None
             company_foreign_name = raw.get("G2NAME")
 
             # ── Измерения ─────────────────────────────────────────────────
             unit      = (raw.get("P1") or "").strip() or None
             weight    = raw.get("G38")
             gross_wt  = raw.get("G35")
-            quantity  = raw.get("ZA_ED")
+            quantity  = raw.get("ZA_ED") or raw.get("KOL_VO")  # ZA_ED=2020, KOL_VO=2017
             g32       = raw.get("G32")
             packages  = int(g32) if g32 is not None else None
 
@@ -822,7 +830,7 @@ def load_dbf_flat(
             price_usd = _resolve_price(raw)
             g22a      = (raw.get("G22A") or "").strip()
             cur_code  = _currency_alpha(g22a)
-            cur_amt   = raw.get("G22B")
+            cur_amt   = raw.get("G22B") or raw.get("G42")  # G22B=2020, G42=2017
             ex_rate   = raw.get("G23")
 
             # ── Поставка ──────────────────────────────────────────────────
