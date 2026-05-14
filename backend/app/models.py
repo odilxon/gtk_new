@@ -132,3 +132,68 @@ class GTK(Base):
         Index("idx_gtk_country", "country_id"),
         Index("idx_gtk_product", "product_id"),
     )
+
+
+class GTKAll(Base):
+    """Плоская денормализованная таблица ГТД — без внешних ключей.
+
+    Все значения хранятся «как есть» из DBF-файлов: коды стран, ТНВЭД,
+    наименования компаний, суммы. Никакой нормализации — просто сырые данные.
+    Старая таблица gtk остаётся нетронутой.
+    """
+    __tablename__ = "gtk_all"
+
+    id = Column(Integer, primary_key=True)
+
+    # ── Идентификация декларации ──────────────────────────────────────────
+    regime             = Column(String(4),   nullable=False)  # "ИМ" / "ЭК"
+    date               = Column(Date,        nullable=False)
+    declaration_number = Column(String(20))                   # G7A/G7C
+
+    # ── Страна ───────────────────────────────────────────────────────────
+    country_code = Column(String(3))    # G15: "156"
+    country_name = Column(String(255))  # из SLVS03: "КИТАЙ" (пусто если нет файла)
+    country_iso2 = Column(String(2))    # из SLVS03: "CN"
+
+    # ── Товар ─────────────────────────────────────────────────────────────
+    tnved               = Column(String(20))    # G33: "7002390000"
+    product_description = Column(String(1000)) # G31NAME (обрезан до 1000 символов)
+
+    # ── Компании ──────────────────────────────────────────────────────────
+    company_uzb_name    = Column(String(500))  # G8NAME
+    company_uzb_stir    = Column(String(50))   # G8CODE2
+    company_foreign_name= Column(String(500))  # G2NAME
+
+    # ── Измерения ─────────────────────────────────────────────────────────
+    unit           = Column(String(50))   # P1: "кг", "шт"
+    weight         = Column(Float)        # G38: нетто кг
+    gross_weight   = Column(Float)        # G35: брутто кг
+    quantity       = Column(Float)        # ZA_ED
+    packages_count = Column(Integer)      # G32
+
+    # ── Цена / валюта ─────────────────────────────────────────────────────
+    price_usd       = Column(Float)    # G45USD — CIF-стоимость, фактический USD
+    currency_code   = Column(CHAR(3))  # G22A → alpha-3: "USD", "EUR", "RUB"
+    currency_amount = Column(Float)    # G22B — сумма в валюте контракта
+    exchange_rate   = Column(Float)    # G23 — UZS за 1 ед. валюты на дату ГТД
+
+    # ── Условия поставки ──────────────────────────────────────────────────
+    incoterms       = Column(String(10))   # G20B: "CIP", "FOB"…
+    incoterms_place = Column(String(100))  # G20NAME: "г.Ташкент"
+
+    # ── Таможенные платежи (UZS) ──────────────────────────────────────────
+    customs_duty = Column(Float)  # PAYMFACT20
+    vat_amount   = Column(Float)  # PAYMFACT29
+
+    # ── Источник и дедупликация ───────────────────────────────────────────
+    source_file = Column(String(255))              # имя исходного DBF-файла
+    dedup_hash  = Column(CHAR(64), nullable=False)  # SHA-256, UNIQUE
+
+    __table_args__ = (
+        Index("idx_gtkall_regime",   "regime"),
+        Index("idx_gtkall_date",     "date"),
+        Index("idx_gtkall_country",  "country_code"),
+        Index("idx_gtkall_tnved",    "tnved"),
+        Index("idx_gtkall_stir",     "company_uzb_stir"),
+        Index("idx_gtkall_dedup",    "dedup_hash", unique=True),
+    )

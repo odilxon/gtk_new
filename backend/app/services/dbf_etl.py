@@ -39,6 +39,7 @@ Fallback: G22B используется только когда G45USD==0 и G22
 """
 from __future__ import annotations
 
+import hashlib
 import struct
 import time
 from datetime import date as _date
@@ -714,3 +715,215 @@ def find_dbf_files(
             break
 
     return main_dbf, slvs03
+
+
+# ── Плоский ETL: DBF → gtk_all (без FK) ────────────────────────────────────
+
+
+def _flat_hash(
+    declaration_number: str | None,
+    tnved: str | None,
+    date: _date | None,
+    regime: str | None,
+    currency_amount: float | None,
+    currency_code: str | None,
+    weight: float | None,
+) -> str:
+    """SHA-256 для строки gtk_all. Идентифицирует одну линию декларации."""
+    def _f(v: float | None) -> str:
+        return f"{v:.6f}" if v is not None else ""
+
+    parts = [
+        declaration_number or "",
+        tnved or "",
+        date.isoformat() if date else "",
+        regime or "",
+        currency_code or "",
+        _f(currency_amount),
+        _f(weight),
+    ]
+    return hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
+
+
+def load_dbf_flat(
+    dbf_path: str | Path,
+    slvs03_path: str | Path | None = None,
+    *,
+    engine: Engine | None = None,
+) -> EtlResult:
+    """Загрузить DBF-файл в плоскую таблицу gtk_all без внешних ключей.
+
+    Все значения пишутся как есть — коды стран, ТНВЭД, названия компаний.
+    Если slvs03_path задан — страна обогащается именем и ISO-кодом.
+    Таблица gtk и все нормализованные справочники не трогаются.
+    """
+    from app.models import GTKAll  # избегаем циклического импорта на верхнем уровне
+
+    started   = time.monotonic()
+    dbf_path  = Path(dbf_path)
+    source    = dbf_path.name
+
+    country_lookup: dict[str, tuple[str, str | None]] = {}
+    if slvs03_path:
+        country_lookup = load_country_lookup(Path(slvs03_path))
+
+    MakeSession = sessionmaker(bind=engine or sync_engine)
+    session: Session = MakeSession()
+
+    try:
+        batch:     list[dict] = []
+        rows_total = added = duplicates = invalid = 0
+        seen_in_batch: set[str] = set()
+
+        for raw in _iter_dbf(dbf_path, MAIN_ENC):
+            rows_total += 1
+
+            # ── Режим ────────────────────────────────────────────────────
+            regime = (raw.get("G1A") or "").strip()
+            if regime not in ("ИМ", "ЭК"):
+                invalid += 1
+                continue
+
+            # ── Дата ─────────────────────────────────────────────────────
+            d = _parse_date(raw.get("G7B"))
+            if d is None:
+                invalid += 1
+                continue
+
+            # ── Страна ───────────────────────────────────────────────────
+            country_code = _norm_code(raw.get("G15"))
+            if country_code in country_lookup:
+                country_name, country_iso2 = country_lookup[country_code]
+            else:
+                country_name, country_iso2 = None, None
+
+            # ── ТНВЭД ────────────────────────────────────────────────────
+            tnved_raw = (raw.get("G33") or "").strip()
+            tnved = tnved_raw.lstrip("0").zfill(10) if tnved_raw else None
+
+            # ── Описание товара (обрезаем до 1000 символов) ───────────────
+            desc_raw = raw.get("G31NAME") or ""
+            product_description = desc_raw[:1000] or None
+
+            # ── Компании ─────────────────────────────────────────────────
+            company_uzb_name     = raw.get("G8NAME")
+            company_uzb_stir     = (raw.get("G8CODE2") or "").strip() or None
+            company_foreign_name = raw.get("G2NAME")
+
+            # ── Измерения ─────────────────────────────────────────────────
+            unit      = (raw.get("P1") or "").strip() or None
+            weight    = raw.get("G38")
+            gross_wt  = raw.get("G35")
+            quantity  = raw.get("ZA_ED")
+            g32       = raw.get("G32")
+            packages  = int(g32) if g32 is not None else None
+
+            # ── Цена ─────────────────────────────────────────────────────
+            price_usd = _resolve_price(raw)
+            g22a      = (raw.get("G22A") or "").strip()
+            cur_code  = _currency_alpha(g22a)
+            cur_amt   = raw.get("G22B")
+            ex_rate   = raw.get("G23")
+
+            # ── Поставка ──────────────────────────────────────────────────
+            g7a  = (raw.get("G7A") or "").strip()
+            g7c  = (raw.get("G7C") or "").strip()
+            decl = f"{g7a}/{g7c}" if g7a and g7c else None
+
+            incoterms = (raw.get("G20B")    or "").strip() or None
+            inc_place = (raw.get("G20NAME") or "").strip() or None
+
+            duty = raw.get("PAYMFACT20")
+            vat  = raw.get("PAYMFACT29")
+
+            # ── Хеш ──────────────────────────────────────────────────────
+            h = _flat_hash(
+                declaration_number=decl,
+                tnved=tnved,
+                date=d,
+                regime=regime,
+                currency_amount=float(cur_amt) if cur_amt is not None else None,
+                currency_code=cur_code,
+                weight=float(weight) if weight is not None else None,
+            )
+
+            if h in seen_in_batch:
+                duplicates += 1
+                continue
+            seen_in_batch.add(h)
+
+            batch.append({
+                "regime":              regime,
+                "date":                d,
+                "declaration_number":  decl,
+                "country_code":        country_code or None,
+                "country_name":        country_name,
+                "country_iso2":        country_iso2,
+                "tnved":               tnved,
+                "product_description": product_description,
+                "company_uzb_name":    company_uzb_name,
+                "company_uzb_stir":    company_uzb_stir,
+                "company_foreign_name":company_foreign_name,
+                "unit":                unit,
+                "weight":              float(weight)   if weight   is not None else None,
+                "gross_weight":        float(gross_wt) if gross_wt is not None else None,
+                "quantity":            float(quantity) if quantity is not None else None,
+                "packages_count":      packages,
+                "price_usd":           price_usd,
+                "currency_code":       cur_code,
+                "currency_amount":     float(cur_amt)  if cur_amt  is not None else None,
+                "exchange_rate":       float(ex_rate)  if ex_rate  is not None else None,
+                "incoterms":           incoterms,
+                "incoterms_place":     inc_place,
+                "customs_duty":        float(duty) if duty is not None else None,
+                "vat_amount":          float(vat)  if vat  is not None else None,
+                "source_file":         source,
+                "dedup_hash":          h,
+            })
+
+            if len(batch) >= BATCH_SIZE:
+                ins, dup = _flush_flat_batch(session, batch, GTKAll)
+                added      += ins
+                duplicates += dup
+                batch.clear()
+                seen_in_batch.clear()
+                _print_progress(rows_total, added, duplicates, invalid)
+
+        if batch:
+            ins, dup = _flush_flat_batch(session, batch, GTKAll)
+            added      += ins
+            duplicates += dup
+
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+    return EtlResult(
+        rows_total=rows_total,
+        added=added,
+        duplicates_skipped=duplicates,
+        invalid_skipped=invalid,
+        countries=0,
+        regions=0,
+        categories=0,
+        products=0,
+        companies_uzb=0,
+        companies_foreign=0,
+        duration_ms=int((time.monotonic() - started) * 1000),
+    )
+
+
+def _flush_flat_batch(
+    session: Session,
+    batch: list[dict],
+    model: type,
+) -> tuple[int, int]:
+    """Bulk insert батча в плоскую таблицу. Возвращает (inserted, db_dups)."""
+    stmt = pg_insert(model.__table__).values(batch)
+    stmt = stmt.on_conflict_do_nothing(index_elements=["dedup_hash"])
+    result = session.execute(stmt)
+    session.commit()
+    inserted = result.rowcount or 0
+    return inserted, len(batch) - inserted

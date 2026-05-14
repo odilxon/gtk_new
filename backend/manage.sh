@@ -5,8 +5,9 @@
 #   ./manage.sh migrate                  — накатить миграции (alembic upgrade head)
 #   ./manage.sh clean                    — удалить все записи из gtk
 #   ./manage.sh load <file.xlsx>         — залить данные из Excel
-#   ./manage.sh dbf-load <папка>          — залить данные из DBF (ГТД, один период)
-#   ./manage.sh dbf-load-all <корень>    — залить все периоды из подпапок
+#   ./manage.sh dbf-load <папка>          — залить DBF в gtk_all (плоская, без FK)
+#   ./manage.sh dbf-load-all <корень>    — все периоды → gtk_all
+#   ./manage.sh dbf-load-gtk <папка>     — залить DBF в gtk (нормализованная, с FK)
 #   ./manage.sh enrich                   — enrich all (ISO коды + регионы)
 #   ./manage.sh reload <file.xlsx>       — clean + load + enrich (полный ре-импорт)
 #   ./manage.sh stats                    — счётчики по таблицам
@@ -41,10 +42,10 @@ case "$cmd" in
 
   dbf-load)
     if [ -z "${2:-}" ]; then
-      echo "Укажи путь к папке с DBF: ./manage.sh dbf-load <папка> [имя_главного.dbf]"
+      echo "Укажи путь к папке с DBF: ./manage.sh dbf-load <папка>"
       exit 1
     fi
-    python -m scripts.dbf_load "$2" ${3:+--main "$3"}
+    python -m scripts.dbf_load "$2" --target gtk_all ${3:+--main "$3"}
     ;;
 
   dbf-load-all)
@@ -52,7 +53,15 @@ case "$cmd" in
       echo "Укажи корневую папку: ./manage.sh dbf-load-all <папка_с_периодами>"
       exit 1
     fi
-    python -m scripts.dbf_load --all "$2"
+    python -m scripts.dbf_load --all "$2" --target gtk_all
+    ;;
+
+  dbf-load-gtk)
+    if [ -z "${2:-}" ]; then
+      echo "Укажи путь к папке с DBF: ./manage.sh dbf-load-gtk <папка>"
+      exit 1
+    fi
+    python -m scripts.dbf_load "$2" --target gtk ${3:+--main "$3"}
     ;;
 
   enrich)
