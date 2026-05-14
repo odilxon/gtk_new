@@ -57,3 +57,13 @@ old.js
 old_api.py
 country.json
 .claude/
+
+# Raw DBF import data (large binary files, kept on server only)
+to_import/
+*.dbf
+*.DBF
+*.ADX
+*.APR
+
+# Static assets managed outside repo
+logo.jpg

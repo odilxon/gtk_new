@@ -108,6 +108,18 @@ class GTK(Base):
     # при повторной загрузке Excel. Формат строки и хеша — в gtk_etl.py.
     dedup_hash = Column(CHAR(64), nullable=False, unique=True, index=True)
 
+    # ── Поля из DBF/ГТД (NULL для записей из Excel) ──────────────────────
+    declaration_number = Column(String(20))   # G7A/G7C: "26002/0008601"
+    incoterms          = Column(String(10))   # G20B: "CIP", "FOB", "EXW"…
+    incoterms_place    = Column(String(100))  # G20NAME: "г.Ташкент"
+    currency_code      = Column(CHAR(3))      # ISO-4217 alpha: "USD","EUR","RUB"
+    currency_amount    = Column(Float)        # G22B: сумма в валюте контракта
+    exchange_rate      = Column(Float)        # G23: UZS за 1 единицу валюты
+    gross_weight       = Column(Float)        # G35: вес брутто, кг
+    packages_count     = Column(Integer)      # G32: количество мест
+    customs_duty       = Column(Float)        # PAYMFACT20: пошлина (UZS)
+    vat_amount         = Column(Float)        # PAYMFACT29: НДС (UZS)
+
     country = relationship("Country", back_populates="gtk_records")
     region = relationship("Region", back_populates="gtk_records")
     product = relationship("Product", back_populates="gtk_records")
